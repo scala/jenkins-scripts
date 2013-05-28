@@ -1,0 +1,29 @@
+#!/bin/bash
+git fetch origin
+git fetch origin "+pull/${pullrequest}/head:pullreq/${pullrequest}"
+
+# merge the head of the PR into the target mergebranch to make sure it integrates
+if [ "EMPTY$(git rev-list $sha..pullreq/${pullrequest})" = "EMPTY" ]
+then 
+  echo "Merging head $sha of #${pullrequest} into ${mergebranch}."
+  git checkout --detach -f origin/$mergebranch
+  git log -n 1 --oneline HEAD
+  git merge "pullreq/${pullrequest}"
+  echo "Building commit $sha of #${pullrequest} (merged into ${mergebranch})."
+  ./jenkins-scripts/job/$JOB $publishMethod
+else # build intermediate commits as-is
+  echo "Building $sha unless already merged into a (master-like) branch in the repository."
+
+  HEADS=`git show-ref --dereference --abbrev=10 | grep refs/remotes/origin | cut -d' ' -f1 | sort -u`
+  echo "Current repository heads:"
+  for h in $HEADS; do git log -n 1 --oneline $h; done
+
+  # do build once or not at all (commit == sha)
+  for commit in `git rev-list -n 1 $sha --not $HEADS`
+  do 
+    git checkout --detach -f $commit
+    git log -n 1 --oneline HEAD
+    echo "Building commit $commit of #$pullrequest (targeting $mergebranch)."
+    ./jenkins-scripts/job/$JOB
+  done
+fi

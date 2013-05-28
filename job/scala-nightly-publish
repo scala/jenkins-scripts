@@ -4,4 +4,4 @@ scriptsDir="$( cd "$( dirname "$0" )/.." && pwd )"
 . $scriptsDir/common
 . $scriptsDir/publish-nightly
 
-publishNightly $publish "scala-nightly-main" $mainBuild "docs-master"
+publishNightly $publish "scala-nightly-main-$branch" $mainBuild "docs-$branch"

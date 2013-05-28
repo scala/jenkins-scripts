@@ -1,0 +1,9 @@
+#!/bin/bash -x
+
+echo "Deploying artifacts to typesafe.artifactoryonline.com ..."
+
+cd dists/maven/latest
+
+ant -Dremote.snapshot.repository=http://typesafe.artifactoryonline.com/typesafe/scala-pr-validation-snapshots/ \
+    -Drepository.credentials.id=artifactory-bot \
+    deploy
