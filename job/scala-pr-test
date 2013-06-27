@@ -7,6 +7,13 @@ scriptsDir="$( cd "$( dirname "$0" )/.." && pwd )"
 ./pull-binary-libs.sh || ./pull-binary-libs
 
 # we already got to pack.done, fake it here...
+mkdir -p build/libs
+mkdir -p build/locker
+mkdir -p build/osgi
+mkdir -p build/pack
+mkdir -p build/palo
+mkdir -p build/quick
+mkdir -p build/scaladoc
 touch build/libs/asm.complete
 touch build/libs/forkjoin.complete
 touch build/locker/compiler.complete
