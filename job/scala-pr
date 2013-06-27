@@ -22,3 +22,5 @@ ant "-Darchives.skipxz=true -Dbuild.release=1 -Dmaven.version.suffix=\"-${sha:0:
 
 # archive artifacts...
 $scriptsDir/archive-checkin
+
+tar czf jenkins-artifacts/build.tgz build/
