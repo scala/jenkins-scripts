@@ -6,42 +6,4 @@ scriptsDir="$( cd "$( dirname "$0" )/.." && pwd )"
 
 ./pull-binary-libs.sh || ./pull-binary-libs
 
-# we already got to pack.done, fake it here...
-mkdir -p build/libs
-mkdir -p build/locker
-mkdir -p build/osgi
-mkdir -p build/pack
-mkdir -p build/palo
-mkdir -p build/quick
-mkdir -p build/scaladoc
-touch build/libs/asm.complete
-touch build/libs/forkjoin.complete
-touch build/locker/compiler.complete
-touch build/locker/library.complete
-touch build/locker/reflect.complete
-touch build/osgi/bundles.complete
-touch build/pack/bin.complete
-touch build/palo/bin.complete
-touch build/quick/actors.complete
-touch build/quick/bin.complete
-touch build/quick/compiler.complete
-touch build/quick/interactive.complete
-touch build/quick/library.complete
-touch build/quick/parser-combinators.complete
-touch build/quick/partest.complete
-touch build/quick/plugins.complete
-touch build/quick/reflect.complete
-touch build/quick/repl.complete
-touch build/quick/scalacheck.complete
-touch build/quick/scaladoc.complete
-touch build/quick/scalap.complete
-touch build/quick/swing.complete
-touch build/quick/xml.complete
-touch build/scaladoc/compiler.complete
-touch build/scaladoc/continuations-plugin.complete
-touch build/scaladoc/library.complete
-touch build/scaladoc/manual.complete
-touch build/scaladoc/partest.complete
-touch build/scaladoc/scalap.complete
-
 ant test-opt
