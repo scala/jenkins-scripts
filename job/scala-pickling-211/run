@@ -14,7 +14,7 @@ cd pickling
 git checkout master
 
 # STEP 2: RUN THE TESTS
-runSbt "project scala-pickling" test travInt geoTrellis evactor1 evactor2
+runSbt "project scala-pickling" test travInt geoTrellis evactor1 evactor2 graph graphjava graphkryo vectorkryo
 
 # STEP 3: PUBLISH TO SONATYPE
 runSbt "project scala-pickling" publish
