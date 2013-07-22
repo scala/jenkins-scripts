@@ -4,4 +4,4 @@ scriptsDir="$( cd "$( dirname "$0" )/.." && pwd )"
 . $scriptsDir/common
 . $scriptsDir/publish-nightly
 
-publishNightly $publish "macro-paradise-nightly-main" $mainBuild "docs-master"
+publishNightly $publish "macro-paradise211-nightly-main" $mainBuild "docs-master"
