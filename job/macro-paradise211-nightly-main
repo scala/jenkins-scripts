@@ -1,8 +1,0 @@
-#!/bin/bash -x
-
-scriptsDir="$( cd "$( dirname "$0" )/.." && pwd )"
-
-nightlyTask="nightly" $scriptsDir/build
-savedState=$?
-$scriptsDir/archive-nightly
-exit $savedState

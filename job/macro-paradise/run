@@ -1,0 +1,20 @@
+#!/bin/bash -ex
+
+# STEP 1: INITIALIZE
+script_dir="$( cd "$( dirname "$0" )" && pwd )"
+scriptsDir="$( cd "$( dirname "$0" )/../.." && pwd )"
+. $scriptsDir/common
+runSbt () {
+  sbt -Dmaven.settings.file="$maven_settings_file" -no-colors -no-share -sbt-launch-dir "$script_dir/project/launcher" "$@"
+}
+git clean -dfx
+if [[ -d paradise ]]; then rm -rf paradise; fi
+git clone git@github.com:scalamacros/paradise.git paradise
+cd paradise
+git checkout 2.10.x
+
+# STEP 2: RUN THE TESTS
+runSbt "project tests" test
+
+# STEP 3: PUBLISH TO SONATYPE
+runSbt "project macro-paradise" publish

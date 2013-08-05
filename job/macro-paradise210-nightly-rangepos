@@ -1,2 +1,0 @@
-#!/bin/bash -ex
-"$(dirname "$0")/scala-checkin-rangepos"
