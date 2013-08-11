@@ -32,7 +32,7 @@ ant locker.done # we might be binary incompatible with starr, so no plugin when 
 ant build
 # TODO: make all the tests pass
 # current failures are quite minor, but it's still annoying
-git apply --stat ../test_fixup.patch
+git apply ../test_fixup.patch
 cd "$script_dir/scala/test"
 SCALAC_OPTS="-Xplugin:$plugin" ./partest --all
 
