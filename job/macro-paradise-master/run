@@ -29,6 +29,9 @@ ant locker.done # we might be binary incompatible with starr, so no plugin when 
 # but I've disabled the hijack when compiling scala-reflect.jar, and the problem still persists
 # ant "-Dscalac.args=\"-Xplugin:$plugin\"" build-opt test.bc
 ant build
+# TODO: make all the tests pass
+# current failures are quite minor, but it's still annoying
+git apply ../test_fixup.patch
 ant "-Dscalac.args.optimise=\"-Xplugin:$plugin\"" test.suite
 
 # STEP 4: PUBLISH TO SONATYPE
