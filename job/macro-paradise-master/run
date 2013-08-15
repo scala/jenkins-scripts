@@ -1,0 +1,37 @@
+#!/bin/bash -ex
+
+# STEP 1: INITIALIZE
+script_dir="$( cd "$( dirname "$0" )" && pwd )"
+scriptsDir="$( cd "$( dirname "$0" )/../.." && pwd )"
+. $scriptsDir/common
+runSbt () {
+  sbt -Dmaven.settings.file="$maven_settings_file" -no-colors -no-share -sbt-launch-dir "$script_dir/project/launcher" "$@"
+}
+git clean -dfx
+if [[ -d paradise ]]; then rm -rf paradise; fi
+git clone git@github.com:scalamacros/paradise.git -b master paradise
+if [[ -d scala ]]; then rm -rf scala; fi
+git clone git@github.com:scala/scala.git -b master scala
+
+# STEP 2: RUN THE TESTS
+cd "$script_dir/paradise"
+runSbt "project tests" test
+plugin=( $(pwd)/plugin/target/scala-2.11/macro-paradise_*.jar )
+[[ ! -f "$plugin" ]] && exit 1
+
+# STEP 3: BOOTSTRAP SCALAC USING THE PARADISE PLUGIN
+cd "$script_dir/scala"
+git checkout master
+./pull-binary-libs.sh
+ant locker.done # we might be binary incompatible with starr, so no plugin when building locker
+# TODO: don't know what's going on, but with the plugin enabled Universe.reify stops being recognized as a macro
+# well, I actually I have a suspicion that hijacking fastTrack might lead to Universe.reify not being marked as MACRO
+# but I've disabled the hijack when compiling scala-reflect.jar, and the problem still persists
+# ant "-Dscalac.args=\"-Xplugin:$plugin\"" build-opt test.bc
+ant build
+cd "$script_dir/scala/test"
+SCALAC_OPTS="-Xplugin:$plugin" ./partest --all
+
+# STEP 4: PUBLISH TO SONATYPE
+cd "$script_dir/paradise"
+runSbt "project macro-paradise" publish
