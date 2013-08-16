@@ -5,28 +5,22 @@ script_dir="$( cd "$( dirname "$0" )" && pwd )"
 scriptsDir="$( cd "$( dirname "$0" )/../.." && pwd )"
 . $scriptsDir/common
 runSbt () {
-  sbt -Dmaven.settings.file="$maven_settings_file" -no-colors -no-share -sbt-launch-dir "$script_dir/project/launcher" "$@"
+  sbt -Dmaven.settings.file="$maven_settings_file" -Dparadise.scala.home="$script_dir/scala/build/pack" -no-colors -no-share -sbt-launch-dir "$script_dir/project/launcher" "$@"
 }
 git clean -dfx
 if [[ -d paradise ]]; then rm -rf paradise; fi
-git clone git@github.com:scalamacros/paradise.git -b master paradise
+git clone git@github.com:scalamacros/paradise.git -b hooked paradise
 if [[ -d scala ]]; then rm -rf scala; fi
-git clone git@github.com:scala/scala.git -b master scala
+git clone git@github.com:xeno-by/scala.git -b topic/paradise-hooks scala
 
-# STEP 2: RUN THE TESTS
-cd "$script_dir/paradise"
-runSbt "project tests" test
-plugin=( $(pwd)/plugin/target/scala-2.11.0-SNAPSHOT/macro-paradise_*.jar )
-[[ ! -f "$plugin" ]] && exit 1
-
-# STEP 3: SELECT SCALAC BRANCH AND APPLY OUR PATCHES
+# STEP 2: SELECT SCALAC BRANCH AND APPLY OUR PATCHES
 # TODO: make all the tests pass
 # current failures are quite minor, but it's still annoying
 cd "$script_dir/scala"
-git checkout master
+git checkout topic/paradise-hooks
 git apply "$script_dir/test_fixup.patch"
 
-# STEP 4: BOOTSTRAP SCALAC USING THE PARADISE PLUGIN
+# STEP 3: BUILD CUSTOM SCALAC TO THEN BUILD OUR PLUGIN
 cd "$script_dir/scala"
 ./pull-binary-libs.sh
 ant locker.done # we might be binary incompatible with starr, so no plugin when building locker
@@ -35,10 +29,12 @@ ant locker.done # we might be binary incompatible with starr, so no plugin when 
 # but I've disabled the hijack when compiling scala-reflect.jar, and the problem still persists
 # ant "-Dscalac.args=\"-Xplugin:$plugin\"" build-opt test.bc
 ant build
-# TODO: make all the tests pass
-# current failures are quite minor, but it's still annoying
-ant "-Dscalac.args.optimise=\"-Xplugin:$plugin\"" test.suite
 
-# STEP 4: PUBLISH TO SONATYPE
+# STEP 4: RUN THE PLUGIN TESTS
 cd "$script_dir/paradise"
-runSbt "project macro-paradise" publish
+runSbt "project tests" test
+plugin=( $(pwd)/plugin/target/scala-2.11.0-SNAPSHOT/macro-paradise_*.jar )
+[[ ! -f "$plugin" ]] && exit 1
+
+# STEP 5: RUN THE SCALAC TESTS
+ant "-Dscalac.args.optimise=\"-Xplugin:$plugin\"" test.suite
