@@ -37,4 +37,5 @@ plugin=( $(pwd)/plugin/target/scala-2.11.0-SNAPSHOT/macro-paradise_*.jar )
 [[ ! -f "$plugin" ]] && exit 1
 
 # STEP 5: RUN THE SCALAC TESTS
+cd "$script_dir/scala"
 ant "-Dscalac.args.optimise=\"-Xplugin:$plugin\"" test.suite
