@@ -1,6 +1,6 @@
-From c252ca2d73123cbb9d72b8710125c2302ecc7e1a Mon Sep 17 00:00:00 2001
+From 6928d3f48138fe23c094e80495d66b379e11c903 Mon Sep 17 00:00:00 2001
 From: Eugene Burmako <xeno.by@gmail.com>
-Date: Thu, 15 Aug 2013 13:40:55 +0200
+Date: Fri, 16 Aug 2013 09:38:37 +0200
 Subject: [PATCH] test that currently fail for macro paradise
 
 ---
@@ -12,19 +12,15 @@ Subject: [PATCH] test that currently fail for macro paradise
  test/files/neg/t6666.scala              | 121 --------------------------------
  test/files/neg/t7494-no-options.check   |  59 ++++++++--------
  test/files/neg/t800.check               |   3 +-
- test/files/pos/t7426.check              |   0
  test/files/pos/t7426.scala              |   3 -
  test/files/pos/z1730.scala              |  13 ----
  test/files/run/t6102.check              |   1 +
- test/files/run/t6259.check              |   0
  test/files/run/t6259.scala              |  56 ---------------
  test/files/scalap/typeAnnotations.check |   2 +-
- 15 files changed, 123 insertions(+), 310 deletions(-)
+ 13 files changed, 123 insertions(+), 310 deletions(-)
  delete mode 100644 test/files/neg/t6666.scala
- create mode 100644 test/files/pos/t7426.check
  delete mode 100644 test/files/pos/t7426.scala
  delete mode 100644 test/files/pos/z1730.scala
- create mode 100644 test/files/run/t6259.check
  delete mode 100644 test/files/run/t6259.scala
 
 diff --git a/test/files/jvm/t7006.check b/test/files/jvm/t7006.check
@@ -38,7 +34,7 @@ index 7c99eba30c..65b3b46a19 100644
  [running phase packageobjects on Foo_1.scala]
  [running phase typer on Foo_1.scala]
 diff --git a/test/files/neg/t6446-additional.check b/test/files/neg/t6446-additional.check
-index 24201c07c2..8d096657ae 100755
+index 24201c07c2..a392e66f69 100755
 --- a/test/files/neg/t6446-additional.check
 +++ b/test/files/neg/t6446-additional.check
 @@ -1,32 +1,33 @@
@@ -74,7 +70,7 @@ index 24201c07c2..8d096657ae 100755
 -           jvm  28  generate JVM bytecode
 -       ploogin  29  A sample phase that does so many things it's kind of hard...
 -      terminal  30  The last phase in the compiler chain
-+ macroparadise   2  
++ macroparadise   2
 +         namer   3  resolve names, attach symbols to named trees in paradise
 +packageobjects   4  load package objects in paradise
 +         typer   5  the meat and potatoes: type the trees in paradise
@@ -112,7 +108,7 @@ index fa5c581941..3b08e6480a 100755
 +macroparadise - Empowers production Scala compiler with latest macro developments
  ploogin - A sample plugin for testing.
 diff --git a/test/files/neg/t6446-missing.check b/test/files/neg/t6446-missing.check
-index 6e5bdcf07c..74cd04d954 100755
+index 6e5bdcf07c..7565362a14 100755
 --- a/test/files/neg/t6446-missing.check
 +++ b/test/files/neg/t6446-missing.check
 @@ -2,31 +2,32 @@ Warning: class not found: t6446.Ploogin
@@ -147,7 +143,7 @@ index 6e5bdcf07c..74cd04d954 100755
 -           dce  27  optimization: eliminate dead code
 -           jvm  28  generate JVM bytecode
 -      terminal  29  The last phase in the compiler chain
-+ macroparadise   2  
++ macroparadise   2
 +         namer   3  resolve names, attach symbols to named trees in paradise
 +packageobjects   4  load package objects in paradise
 +         typer   5  the meat and potatoes: type the trees in paradise
@@ -177,7 +173,7 @@ index 6e5bdcf07c..74cd04d954 100755
 +           jvm  29  generate JVM bytecode
 +      terminal  30  The last phase in the compiler chain
 diff --git a/test/files/neg/t6446-show-phases.check b/test/files/neg/t6446-show-phases.check
-index a1bf408506..003359ae08 100644
+index a1bf408506..bd55b1218a 100644
 --- a/test/files/neg/t6446-show-phases.check
 +++ b/test/files/neg/t6446-show-phases.check
 @@ -1,31 +1,32 @@
@@ -212,7 +208,7 @@ index a1bf408506..003359ae08 100644
 -           dce  27  optimization: eliminate dead code
 -           jvm  28  generate JVM bytecode
 -      terminal  29  The last phase in the compiler chain
-+ macroparadise   2  
++ macroparadise   2
 +         namer   3  resolve names, attach symbols to named trees in paradise
 +packageobjects   4  load package objects in paradise
 +         typer   5  the meat and potatoes: type the trees in paradise
@@ -370,7 +366,7 @@ index 1919ea3ca9..0000000000
 -} with AnyRef 
 \ No newline at end of file
 diff --git a/test/files/neg/t7494-no-options.check b/test/files/neg/t7494-no-options.check
-index c197d2a671..419ac91ddf 100644
+index c197d2a671..f2ed930842 100644
 --- a/test/files/neg/t7494-no-options.check
 +++ b/test/files/neg/t7494-no-options.check
 @@ -2,32 +2,33 @@ error: Error: ploogin has no options
@@ -406,7 +402,7 @@ index c197d2a671..419ac91ddf 100644
 -           jvm  28  generate JVM bytecode
 -       ploogin  29  A sample phase that does so many things it's kind of hard...
 -      terminal  30  The last phase in the compiler chain
-+ macroparadise   2  
++ macroparadise   2
 +         namer   3  resolve names, attach symbols to named trees in paradise
 +packageobjects   4  load package objects in paradise
 +         typer   5  the meat and potatoes: type the trees in paradise
@@ -450,9 +446,6 @@ index 8ba95fddde..37a0c6f324 100644
    var qualification = false;
        ^
  t800.scala:16: error: method qualification is defined twice
-diff --git a/test/files/pos/t7426.check b/test/files/pos/t7426.check
-new file mode 100644
-index 0000000000..e69de29bb2
 diff --git a/test/files/pos/t7426.scala b/test/files/pos/t7426.scala
 deleted file mode 100644
 index 8e42ad1812..0000000000
@@ -491,9 +484,6 @@ index 97e455647b..a6a8aa599e 100644
  [running phase namer on t6102.scala]
  [running phase packageobjects on t6102.scala]
  [running phase typer on t6102.scala]
-diff --git a/test/files/run/t6259.check b/test/files/run/t6259.check
-new file mode 100644
-index 0000000000..e69de29bb2
 diff --git a/test/files/run/t6259.scala b/test/files/run/t6259.scala
 deleted file mode 100644
 index 294c95e96b..0000000000
@@ -557,18 +547,18 @@ index 294c95e96b..0000000000
 -
 -
 diff --git a/test/files/scalap/typeAnnotations.check b/test/files/scalap/typeAnnotations.check
-index 407b0235c6..69129d6d26 100644
+index cba69f8e41..d72817a725 100644
 --- a/test/files/scalap/typeAnnotations.check
 +++ b/test/files/scalap/typeAnnotations.check
 @@ -1,8 +1,8 @@
  abstract class TypeAnnotations[@scala.specialized R] extends scala.AnyRef {
    def this() = { /* compiled code */ }
    @scala.specialized
--  val x : scala.Int = { /* compiled code */ }
+-  val x: scala.Int = { /* compiled code */ }
    @scala.specialized
    type T
-   def compose[@scala.specialized A](x : A, y : R) : A = { /* compiled code */ }
-+  val x : scala.Int = { /* compiled code */ }
+   def compose[@scala.specialized A](x: A, y: R): A = { /* compiled code */ }
++  val x: scala.Int = { /* compiled code */ }
  }
 -- 
 1.8.1.4
