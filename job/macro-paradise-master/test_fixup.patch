@@ -1,4 +1,4 @@
-From 6928d3f48138fe23c094e80495d66b379e11c903 Mon Sep 17 00:00:00 2001
+From b2c085d17e65b39fa98d1afc239b1578a2a74247 Mon Sep 17 00:00:00 2001
 From: Eugene Burmako <xeno.by@gmail.com>
 Date: Fri, 16 Aug 2013 09:38:37 +0200
 Subject: [PATCH] test that currently fail for macro paradise
@@ -34,7 +34,7 @@ index 7c99eba30c..65b3b46a19 100644
  [running phase packageobjects on Foo_1.scala]
  [running phase typer on Foo_1.scala]
 diff --git a/test/files/neg/t6446-additional.check b/test/files/neg/t6446-additional.check
-index 24201c07c2..a392e66f69 100755
+index 24201c07c2..ed4f1f3da8 100755
 --- a/test/files/neg/t6446-additional.check
 +++ b/test/files/neg/t6446-additional.check
 @@ -1,32 +1,33 @@
@@ -70,7 +70,7 @@ index 24201c07c2..a392e66f69 100755
 -           jvm  28  generate JVM bytecode
 -       ploogin  29  A sample phase that does so many things it's kind of hard...
 -      terminal  30  The last phase in the compiler chain
-+ macroparadise   2
++ macroparadise   2  let our powers combine
 +         namer   3  resolve names, attach symbols to named trees in paradise
 +packageobjects   4  load package objects in paradise
 +         typer   5  the meat and potatoes: type the trees in paradise
@@ -108,7 +108,7 @@ index fa5c581941..3b08e6480a 100755
 +macroparadise - Empowers production Scala compiler with latest macro developments
  ploogin - A sample plugin for testing.
 diff --git a/test/files/neg/t6446-missing.check b/test/files/neg/t6446-missing.check
-index 6e5bdcf07c..7565362a14 100755
+index 6e5bdcf07c..ff9ac67ec5 100755
 --- a/test/files/neg/t6446-missing.check
 +++ b/test/files/neg/t6446-missing.check
 @@ -2,31 +2,32 @@ Warning: class not found: t6446.Ploogin
@@ -143,7 +143,7 @@ index 6e5bdcf07c..7565362a14 100755
 -           dce  27  optimization: eliminate dead code
 -           jvm  28  generate JVM bytecode
 -      terminal  29  The last phase in the compiler chain
-+ macroparadise   2
++ macroparadise   2  let our powers combine
 +         namer   3  resolve names, attach symbols to named trees in paradise
 +packageobjects   4  load package objects in paradise
 +         typer   5  the meat and potatoes: type the trees in paradise
@@ -173,7 +173,7 @@ index 6e5bdcf07c..7565362a14 100755
 +           jvm  29  generate JVM bytecode
 +      terminal  30  The last phase in the compiler chain
 diff --git a/test/files/neg/t6446-show-phases.check b/test/files/neg/t6446-show-phases.check
-index a1bf408506..bd55b1218a 100644
+index a1bf408506..cb2135eaee 100644
 --- a/test/files/neg/t6446-show-phases.check
 +++ b/test/files/neg/t6446-show-phases.check
 @@ -1,31 +1,32 @@
@@ -208,7 +208,7 @@ index a1bf408506..bd55b1218a 100644
 -           dce  27  optimization: eliminate dead code
 -           jvm  28  generate JVM bytecode
 -      terminal  29  The last phase in the compiler chain
-+ macroparadise   2
++ macroparadise   2  let our powers combine
 +         namer   3  resolve names, attach symbols to named trees in paradise
 +packageobjects   4  load package objects in paradise
 +         typer   5  the meat and potatoes: type the trees in paradise
@@ -366,7 +366,7 @@ index 1919ea3ca9..0000000000
 -} with AnyRef 
 \ No newline at end of file
 diff --git a/test/files/neg/t7494-no-options.check b/test/files/neg/t7494-no-options.check
-index c197d2a671..f2ed930842 100644
+index c197d2a671..7b9c73814c 100644
 --- a/test/files/neg/t7494-no-options.check
 +++ b/test/files/neg/t7494-no-options.check
 @@ -2,32 +2,33 @@ error: Error: ploogin has no options
@@ -402,7 +402,7 @@ index c197d2a671..f2ed930842 100644
 -           jvm  28  generate JVM bytecode
 -       ploogin  29  A sample phase that does so many things it's kind of hard...
 -      terminal  30  The last phase in the compiler chain
-+ macroparadise   2
++ macroparadise   2  let our powers combine
 +         namer   3  resolve names, attach symbols to named trees in paradise
 +packageobjects   4  load package objects in paradise
 +         typer   5  the meat and potatoes: type the trees in paradise
