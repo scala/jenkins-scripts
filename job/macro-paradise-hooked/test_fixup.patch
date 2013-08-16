@@ -1,26 +1,46 @@
-From 8b795b469e761ab5ca2370d99e289bffa21413d1 Mon Sep 17 00:00:00 2001
+From ecfee7464bb2d45063223101001db57b926779fb Mon Sep 17 00:00:00 2001
 From: Eugene Burmako <xeno.by@gmail.com>
-Date: Fri, 16 Aug 2013 16:17:08 +0200
+Date: Fri, 16 Aug 2013 23:27:11 +0200
 Subject: [PATCH] test that currently fail for macro paradise
 
 ---
- test/files/jvm/t7006.check              |   1 +
- test/files/neg/t6446-additional.check   |  59 ++++++++--------
- test/files/neg/t6446-list.check         |   1 +
- test/files/neg/t6446-missing.check      |  57 +++++++--------
- test/files/neg/t6446-show-phases.check  |  57 +++++++--------
- test/files/neg/t6666.scala              | 121 --------------------------------
- test/files/neg/t7494-no-options.check   |  59 ++++++++--------
- test/files/neg/t800.check               |   3 +-
- test/files/pos/t7426.scala              |   3 -
- test/files/pos/z1730.scala              |  13 ----
- test/files/run/t6102.check              |   1 +
- test/files/run/t6259.scala              |  56 ---------------
- test/files/scalap/typeAnnotations.check |   2 +-
- 13 files changed, 123 insertions(+), 310 deletions(-)
+ test/files/jvm/t7006.check                         |   1 +
+ .../neg/analyzerReplacingPlugins-a/sample_1.flags  |   1 -
+ .../neg/analyzerReplacingPlugins-a/sample_1.scala  |   3 -
+ .../neg/analyzerReplacingPlugins-b/ploogin_1.scala |  18 ---
+ .../neg/analyzerReplacingPlugins-b/sample_2.flags  |   1 -
+ .../neg/analyzerReplacingPlugins-b/sample_2.scala  |   3 -
+ .../analyzerReplacingPlugins-b/scalac-plugin.xml   |   4 -
+ test/files/neg/t6446-additional.check              |  59 +++++-----
+ test/files/neg/t6446-list.check                    |   1 +
+ test/files/neg/t6446-missing.check                 |  57 +++++-----
+ test/files/neg/t6446-show-phases.check             |  57 +++++-----
+ test/files/neg/t6666.scala                         | 121 ---------------------
+ test/files/neg/t7494-no-options.check              |  59 +++++-----
+ test/files/neg/t800.check                          |   3 +-
+ test/files/pos/t7426.scala                         |   3 -
+ test/files/pos/z1730.scala                         |  13 ---
+ .../run/analyzerReplacingPlugins/ploogin_1.scala   |  31 ------
+ .../run/analyzerReplacingPlugins/sample_2.flags    |   1 -
+ .../run/analyzerReplacingPlugins/sample_2.scala    |   3 -
+ .../run/analyzerReplacingPlugins/scalac-plugin.xml |   4 -
+ test/files/run/t6102.check                         |   1 +
+ test/files/run/t6259.scala                         |  56 ----------
+ test/files/scalap/typeAnnotations.check            |   2 +-
+ 23 files changed, 123 insertions(+), 379 deletions(-)
+ delete mode 100644 test/files/neg/analyzerReplacingPlugins-a/sample_1.flags
+ delete mode 100644 test/files/neg/analyzerReplacingPlugins-a/sample_1.scala
+ delete mode 100644 test/files/neg/analyzerReplacingPlugins-b/ploogin_1.scala
+ delete mode 100644 test/files/neg/analyzerReplacingPlugins-b/sample_2.flags
+ delete mode 100644 test/files/neg/analyzerReplacingPlugins-b/sample_2.scala
+ delete mode 100644 test/files/neg/analyzerReplacingPlugins-b/scalac-plugin.xml
  delete mode 100644 test/files/neg/t6666.scala
  delete mode 100644 test/files/pos/t7426.scala
  delete mode 100644 test/files/pos/z1730.scala
+ delete mode 100644 test/files/run/analyzerReplacingPlugins/ploogin_1.scala
+ delete mode 100644 test/files/run/analyzerReplacingPlugins/sample_2.flags
+ delete mode 100644 test/files/run/analyzerReplacingPlugins/sample_2.scala
+ delete mode 100644 test/files/run/analyzerReplacingPlugins/scalac-plugin.xml
  delete mode 100644 test/files/run/t6259.scala
 
 diff --git a/test/files/jvm/t7006.check b/test/files/jvm/t7006.check
@@ -33,6 +53,74 @@ index 7c99eba30c..65b3b46a19 100644
  [running phase namer on Foo_1.scala]
  [running phase packageobjects on Foo_1.scala]
  [running phase typer on Foo_1.scala]
+diff --git a/test/files/neg/analyzerReplacingPlugins-a/sample_1.flags b/test/files/neg/analyzerReplacingPlugins-a/sample_1.flags
+deleted file mode 100644
+index 8c07b37238..0000000000
+--- a/test/files/neg/analyzerReplacingPlugins-a/sample_1.flags
++++ /dev/null
+@@ -1 +0,0 @@
+--Xplugin:files/plugins/analyzerReplacingPlugin1.jar,files/plugins/analyzerReplacingPlugin2.jar
+diff --git a/test/files/neg/analyzerReplacingPlugins-a/sample_1.scala b/test/files/neg/analyzerReplacingPlugins-a/sample_1.scala
+deleted file mode 100644
+index f81d0079a3..0000000000
+--- a/test/files/neg/analyzerReplacingPlugins-a/sample_1.scala
++++ /dev/null
+@@ -1,3 +0,0 @@
+-object Test extends App {
+-  println("hello")
+-}
+\ No newline at end of file
+diff --git a/test/files/neg/analyzerReplacingPlugins-b/ploogin_1.scala b/test/files/neg/analyzerReplacingPlugins-b/ploogin_1.scala
+deleted file mode 100644
+index 8d65a6622c..0000000000
+--- a/test/files/neg/analyzerReplacingPlugins-b/ploogin_1.scala
++++ /dev/null
+@@ -1,18 +0,0 @@
+-package analyzerReplacingPlugins
+-
+-import scala.tools.nsc.{ Global, Phase }
+-import scala.tools.nsc.plugins.{ EarlyPlugin, PluginComponent }
+-import scala.tools.nsc.typechecker.Analyzer
+-import scala.reflect.io.Path
+-import scala.reflect.io.File
+-import scala.reflect.internal.Mode
+-
+-/** A test plugin.  */
+-class Ploogin(val global: Global) extends EarlyPlugin {
+-  import global._
+-
+-  val name = "analyzerReplacingPlugin"
+-  val description = "A sample analyzer replacing plugin for testing."
+-  val components = Nil
+-  override val analyzer: Option[Analyzer] = Some(global.analyzer)
+-}
+diff --git a/test/files/neg/analyzerReplacingPlugins-b/sample_2.flags b/test/files/neg/analyzerReplacingPlugins-b/sample_2.flags
+deleted file mode 100644
+index d2adf917f9..0000000000
+--- a/test/files/neg/analyzerReplacingPlugins-b/sample_2.flags
++++ /dev/null
+@@ -1 +0,0 @@
+--Xplugin:.
+diff --git a/test/files/neg/analyzerReplacingPlugins-b/sample_2.scala b/test/files/neg/analyzerReplacingPlugins-b/sample_2.scala
+deleted file mode 100644
+index f81d0079a3..0000000000
+--- a/test/files/neg/analyzerReplacingPlugins-b/sample_2.scala
++++ /dev/null
+@@ -1,3 +0,0 @@
+-object Test extends App {
+-  println("hello")
+-}
+\ No newline at end of file
+diff --git a/test/files/neg/analyzerReplacingPlugins-b/scalac-plugin.xml b/test/files/neg/analyzerReplacingPlugins-b/scalac-plugin.xml
+deleted file mode 100644
+index 7f2cb2f6dd..0000000000
+--- a/test/files/neg/analyzerReplacingPlugins-b/scalac-plugin.xml
++++ /dev/null
+@@ -1,4 +0,0 @@
+-<plugin>
+-  <name>analyzer-replacing-plugin</name>
+-  <classname>analyzerReplacingPlugins.Ploogin</classname>
+-</plugin>
 diff --git a/test/files/neg/t6446-additional.check b/test/files/neg/t6446-additional.check
 index 24201c07c2..76dfddf4f1 100755
 --- a/test/files/neg/t6446-additional.check
@@ -474,6 +562,70 @@ index 0c5875a818..0000000000
 -    3.xx(34)
 -  }
 -}
+diff --git a/test/files/run/analyzerReplacingPlugins/ploogin_1.scala b/test/files/run/analyzerReplacingPlugins/ploogin_1.scala
+deleted file mode 100644
+index 4c2cc562ec..0000000000
+--- a/test/files/run/analyzerReplacingPlugins/ploogin_1.scala
++++ /dev/null
+@@ -1,31 +0,0 @@
+-package analyzerReplacingPlugins
+-
+-import scala.tools.nsc.{ Global, Phase }
+-import scala.tools.nsc.plugins.{ EarlyPlugin, PluginComponent }
+-import scala.tools.nsc.typechecker.Analyzer
+-import scala.reflect.io.Path
+-import scala.reflect.io.File
+-import scala.reflect.internal.Mode
+-
+-/** A test plugin.  */
+-class Ploogin(val global: Global) extends EarlyPlugin {
+-  import global._
+-
+-  val name = "analyzerReplacingPlugin"
+-  val description = "A sample analyzer replacing plugin for testing."
+-  val components = Nil
+-  override val analyzer: Option[Analyzer] = Some(new { val global: Ploogin.this.global.type = Ploogin.this.global } with MyAnalyzer)
+-
+-  private trait MyAnalyzer extends Analyzer {
+-    val global: Ploogin.this.global.type
+-    override def newTyper(context: Context) = new Typer(context) {
+-      override def typed1(tree: Tree, mode: Mode, pt: Type): Tree = {
+-        val tree1 = tree match {
+-          case tree @ Literal(Constant("hello")) if tree.tpe == null => Literal(Constant("hello world"))
+-          case _ => tree
+-        }
+-        super.typed1(tree1, mode, pt)
+-      }
+-    }
+-  }
+-}
+diff --git a/test/files/run/analyzerReplacingPlugins/sample_2.flags b/test/files/run/analyzerReplacingPlugins/sample_2.flags
+deleted file mode 100644
+index d2adf917f9..0000000000
+--- a/test/files/run/analyzerReplacingPlugins/sample_2.flags
++++ /dev/null
+@@ -1 +0,0 @@
+--Xplugin:.
+diff --git a/test/files/run/analyzerReplacingPlugins/sample_2.scala b/test/files/run/analyzerReplacingPlugins/sample_2.scala
+deleted file mode 100644
+index f81d0079a3..0000000000
+--- a/test/files/run/analyzerReplacingPlugins/sample_2.scala
++++ /dev/null
+@@ -1,3 +0,0 @@
+-object Test extends App {
+-  println("hello")
+-}
+\ No newline at end of file
+diff --git a/test/files/run/analyzerReplacingPlugins/scalac-plugin.xml b/test/files/run/analyzerReplacingPlugins/scalac-plugin.xml
+deleted file mode 100644
+index 7f2cb2f6dd..0000000000
+--- a/test/files/run/analyzerReplacingPlugins/scalac-plugin.xml
++++ /dev/null
+@@ -1,4 +0,0 @@
+-<plugin>
+-  <name>analyzer-replacing-plugin</name>
+-  <classname>analyzerReplacingPlugins.Ploogin</classname>
+-</plugin>
 diff --git a/test/files/run/t6102.check b/test/files/run/t6102.check
 index 97e455647b..a6a8aa599e 100644
 --- a/test/files/run/t6102.check
