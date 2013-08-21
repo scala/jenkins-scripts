@@ -62,15 +62,10 @@ echo "### SBINARY version detected: \"$SBINARYVERSION\"" | tee -a $LOGGINGDIR/co
 
 # TODO : much better version detection: this is sensitive to
 # the order in which the profiles are declared for sbt !
-# WARNING : IDE has crazy dependencies on fictive SBT
-# versions ! (it mints custom versions every time it has an
-# incompatibility to fix)
+# WARNING : This picks up the last occurrence of `<sbt.version>` inside pom.xml
 # <--- this is super sensitive stuff ---->
-if [[ $SCALAMINOR -gt 10 ]]; then
-    SBTVERSION=$(sed $SEDARGS 's/[^t]*<sbt\.version>([0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z]+[0-9]+)?(-SNAPSHOT)?)<\/sbt\.version>.*/\1/p' $IDEDIR/pom.xml|tail -n 1)
-else
-    SBTVERSION=$(sed $SEDARGS 's/[^t]*<sbt\.version>([0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z]+[0-9]+)?(-SNAPSHOT)?)<\/sbt\.version>.*/\1/p' $IDEDIR/pom.xml|tail -n 2|head -n 1)
-fi
+SBTVERSION=$(sed $SEDARGS 's/[^t]*<sbt\.version>([0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z]+[0-9]+)?(-SNAPSHOT)?)<\/sbt\.version>.*/\1/p' $IDEDIR/pom.xml|tail -n 1)
+
 # <--- this is super sensitive stuff ---->
 if [ -z $SBTVERSION ]; then exit 125; fi
 echo "### SBT version detected: \"$SBTVERSION\""| tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log

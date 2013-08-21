@@ -14,7 +14,7 @@ BASEDIR="$(pwd)"
 # keep them local to the workspace also lets us diagnose problems more easily
 # Make sure this is an absolute path with preceding '/'
 LOCAL_M2_REPO="$BASEDIR/m2repo"
-GENMVNOPTS="-e -X -Dmaven.repo.local=${LOCAL_M2_REPO}"
+GENMVNOPTS="-e -B -X -Dmaven.repo.local=${LOCAL_M2_REPO}"
 
 LOGGINGDIR="$BASEDIR/logs"
 mkdir -p $LOGGINGDIR
