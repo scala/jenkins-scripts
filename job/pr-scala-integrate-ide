@@ -47,10 +47,12 @@ if [ "$SCALAMINOR" = "11" ]; then
     echo "Integrating with Scala 2.11."
     SBTHEAD="0.13-2.11"
     SBINARYHEAD="2.11"
+    SBINARY_NO_TEST_DEPS="set (includeTestDependencies in core) := false"
 else
     echo "Integrating with older Scala."
     SBTHEAD="0.13"
     SBINARYHEAD="master"
+    SBINARY_NO_TEST_DEPS="set (libraryDependencies in core) ~= { _ filterNot (_.configurations.map(_ contains \"test\").getOrElse(false)) }"
 fi
 
 #####################################################
@@ -107,7 +109,6 @@ publish_scala
 
 preparesbt
 
-
 #####################################################
 # Building Sbinary to a local maven repo, if needed #
 #####################################################
@@ -127,15 +128,26 @@ function sbinarybuild(){
     echo "sbt.repository.config=$DEST_REPO_FILE" >> project/build.properties
     echo "sbt.override.build.repos=true" >> project/build.properties
 
+    # When SCALA_BINARY_VERSION is set, we use the following SBT hack
+    # to make sure the modules are resolved using the standard scala binary version,
+    # as we don't rebuild them:
+    # set (libraryDependencies in core) ~= { ld => ld map {
+    #     case dep if (dep.organization == "org.scala-lang.modules") => dep cross CrossVersion.fullMapped(_ => "$SCALA_BINARY_VERSION")
+    #     case dep => dep }
+    # }
+    [[ -z $SCALA_BINARY_VERSION ]] ||\
+      MODULE_VERSIONING="set (libraryDependencies in core) ~= { ld => ld map { case dep if (dep.organization == \"org.scala-lang.modules\") => dep cross CrossVersion.fullMapped(_ => \"$SCALA_BINARY_VERSION\") case dep => dep } }"
+
     set +e
     sbt $SBT_ARGS "reboot full" clean \
   "set every scalaVersion := \"$SCALAVERSION-$SCALAHASH-SNAPSHOT\""\
   "set (version in core) := \"$SBINARYVERSION\"" \
   "set every crossScalaVersions := Seq(\"$SCALAVERSION-$SCALAHASH-SNAPSHOT\")"\
   'set every scalaBinaryVersion <<= scalaVersion.identity' \
-  'set (libraryDependencies in core) ~= { _ filterNot (_.configurations.map(_ contains "test").getOrElse(false)) }' \
+  "$SBINARY_NO_TEST_DEPS" \
   'set every publishMavenStyle := true' \
   "set every resolvers := Seq(\"Sonatype OSS Snapshots\" at \"https://oss.sonatype.org/content/repositories/snapshots\", \"Typesafe IDE\" at \"https://private-repo.typesafe.com/typesafe/ide-$SCALASHORT\", \"Local maven\" at \"file://$LOCAL_M2_REPO\")" \
+  "$MODULE_VERSIONING" \
   'set every credentials := Seq(Credentials(Path.userHome / ".credentials"))' \
   "set every publishTo := Some(Resolver.file(\"file\",  new File(\"$LOCAL_M2_REPO\")))" \
   'set every crossPaths := true' \
@@ -185,22 +197,31 @@ function sbtbuild(){
     echo "sbt.repository.config=$DEST_REPO_FILE" >> project/build.properties
     echo "sbt.override.build.repos=true" >> project/build.properties
 
+
+    # I fought bash for as long as I could bear, but couldn't get
+    # the SCALA_BINARY_VERSION-conditional setup we have above to work
+    # no biggy -- when it's not set, there shouldn't be any dependencies on stuff from organization "org.scala-lang.modules"
+    # (If there are, it's a bug in the validator scripts, which should have the versions.properties file in place that serializes the binary version)
     set +e
     sbt $SBT_ARGS "reboot full" clean \
-     "set every version := \"$SBTVERSION\""\
-     "set every scalaVersion := \"$SCALAVERSION-$SCALAHASH-SNAPSHOT\""\
-     'set every Util.includeTestDependencies := false' \
-        'set every scalaBinaryVersion <<= scalaVersion.identity' \
-        'set (libraryDependencies in compilePersistSub) ~= { ld => ld map { case dep if (dep.organization == "org.scala-tools.sbinary") && (dep.name == "sbinary") => dep.copy(revision = (dep.revision + "-SNAPSHOT")) ; case dep => dep } }' \
-        'set every publishMavenStyle := true' \
-        "set every resolvers := Seq(\"Sonatype OSS Snapshots\" at \"https://oss.sonatype.org/content/repositories/snapshots\", \"Typesafe IDE\" at \"https://private-repo.typesafe.com/typesafe/ide-$SCALASHORT\", \"Local maven\" at \"file://$LOCAL_M2_REPO\")" \
-        'set artifact in (compileInterfaceSub, packageBin) := Artifact("compiler-interface")' \
-        'set publishArtifact in (compileInterfaceSub, packageSrc) := false' \
-        'set every credentials := Seq(Credentials(Path.userHome / ".credentials"))' \
-        "set every publishTo := Some(Resolver.file(\"file\",  new File(\"$LOCAL_M2_REPO\")))" \
-        'set every crossPaths := true' \
-        'show scala-instance' \
-        +classpath/publish +logging/publish +io/publish +control/publish +classfile/publish +process/publish +relation/publish +interface/publish +persist/publish +api/publish +compiler-integration/publish +incremental-compiler/publish +compile/publish +compiler-interface/publish
+      "set (libraryDependencies in cacheSub         ) ~= { ld => ld map { case dep if (dep.organization == \"org.scala-lang.modules\") => dep cross CrossVersion.fullMapped(_ => \"$SCALA_BINARY_VERSION\") case dep => dep } }"\
+      "set (libraryDependencies in compilePersistSub) ~= { ld => ld map { case dep if (dep.organization == \"org.scala-tools.sbinary\") && (dep.name == \"sbinary\") => dep.copy(revision = (dep.revision + \"-SNAPSHOT\")) case dep if (dep.organization == \"org.scala-lang.modules\") => dep cross CrossVersion.fullMapped(_ => \"$SCALA_BINARY_VERSION\") case dep => dep } }"\
+      "set (libraryDependencies in mainSub          ) ~= { ld => ld map { case dep if (dep.organization == \"org.scala-lang.modules\") => dep cross CrossVersion.fullMapped(_ => \"$SCALA_BINARY_VERSION\") case dep => dep } }"\
+      "set (libraryDependencies in processSub       ) ~= { ld => ld map { case dep if (dep.organization == \"org.scala-lang.modules\") => dep cross CrossVersion.fullMapped(_ => \"$SCALA_BINARY_VERSION\") case dep => dep } }"\
+      "set every version := \"$SBTVERSION\""\
+      "set every scalaVersion := \"$SCALAVERSION-$SCALAHASH-SNAPSHOT\""\
+      'set every Util.includeTestDependencies := false' \
+      'set every scalaBinaryVersion <<= scalaVersion.identity' \
+      'set every publishMavenStyle := true' \
+      "set every resolvers := Seq(\"Sonatype OSS Snapshots\" at \"https://oss.sonatype.org/content/repositories/snapshots\", \"Typesafe IDE\" at \"https://private-repo.typesafe.com/typesafe/ide-$SCALASHORT\", \"Local maven\" at \"file://$LOCAL_M2_REPO\")" \
+      'set artifact in (compileInterfaceSub, packageBin) := Artifact("compiler-interface")' \
+      'set publishArtifact in (compileInterfaceSub, packageSrc) := false' \
+      'set every credentials := Seq(Credentials(Path.userHome / ".credentials"))' \
+      "set every publishTo := Some(Resolver.file(\"file\",  new File(\"$LOCAL_M2_REPO\")))" \
+      'set every crossPaths := true' \
+      'show scala-instance' \
+      +classpath/publish +logging/publish +io/publish +control/publish +classfile/publish +process/publish +relation/publish +interface/publish +persist/publish +api/publish +compiler-integration/publish +incremental-compiler/publish +compile/publish +compiler-interface/publish
+
     sbt_return=$?
     set -e
 
