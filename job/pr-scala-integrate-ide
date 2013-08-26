@@ -64,15 +64,12 @@ echo "### SBINARY version detected: \"$SBINARYVERSION\"" | tee -a $LOGGINGDIR/co
 # the order in which the profiles are declared for sbt !
 # WARNING : This picks up the last occurrence of `<sbt.version>` inside pom.xml
 # <--- this is super sensitive stuff ---->
+# TODO: why not refactor the IDE build to make sbt.version a property that can be set from this script?
 SBTVERSION=$(sed $SEDARGS 's/[^t]*<sbt\.version>([0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z]+[0-9]+)?(-SNAPSHOT)?)<\/sbt\.version>.*/\1/p' $IDEDIR/pom.xml|tail -n 1)
 
 # <--- this is super sensitive stuff ---->
 if [ -z $SBTVERSION ]; then exit 125; fi
-echo "### SBT version detected: \"$SBTVERSION\""| tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log
-
-SBT_BOOTSTRAP_VERSION=$(sed $SEDARGS 's/sbt.version=([0-9]+\.[0-9]+\.[0-9]+)/\1/p' $SBTDIR/project/build.properties)
-echo "### SBT bootstraping version detected: \"$SBT_BOOTSTRAP_VERSION\""| tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log
-
+echo "### IDE is expecting SBT version: \"$SBTVERSION\""| tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log
 
 say "### logfile $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log"
 
@@ -110,13 +107,6 @@ preparesbt
 # :end docstring:
 
 function sbinarybuild(){
-    if [ -f project/build.properties ]; then
-        OLD_BUILDPROPERTIES_FILE=$(mktemp -t buildpropsXXX)
-        cat project/build.properties > $OLD_BUILDPROPERTIES_FILE
-        sed -i $SEDARGS_ARGS "s/sbt\.version=.*/sbt.version=$SBT_BOOTSTRAP_VERSION/" project/build.properties
-    else
-        echo "sbt.version=$SBT_BOOTSTRAP_VERSION" > project/build.properties
-    fi
     echo "sbt.repository.config=$DEST_REPO_FILE" >> project/build.properties
     echo "sbt.override.build.repos=true" >> project/build.properties
 
@@ -137,11 +127,6 @@ function sbinarybuild(){
     sbinary_return=$?
     set -e
 
-    if [[ ! -z $OLD_BUILDPROPERTIES_FILE ]]; then
-        mv $OLD_BUILDPROPERTIES_FILE project/build.properties
-    else
-        rm project/build.properties
-    fi
     return $sbinary_return
 }
 
@@ -180,13 +165,6 @@ fi
 # :end docstring:
 
 function sbtbuild(){
-    if [ -f project/build.properties ]; then
-        OLD_BUILDPROPERTIES_FILE=$(mktemp -t buildpropsXXX)
-        cat project/build.properties > $OLD_BUILDPROPERTIES_FILE
-        sed -i $SEDARGS_ARGS "s/sbt\.version=.*/sbt.version=$SBT_BOOTSTRAP_VERSION/" project/build.properties
-    else
-        echo "sbt.version=$SBT_BOOTSTRAP_VERSION" > project/build.properties
-    fi
     echo "sbt.repository.config=$DEST_REPO_FILE" >> project/build.properties
     echo "sbt.override.build.repos=true" >> project/build.properties
 
@@ -209,11 +187,6 @@ function sbtbuild(){
     sbt_return=$?
     set -e
 
-    if [[ ! -z $OLD_BUILDPROPERTIES_FILE ]]; then
-        mv $OLD_BUILDPROPERTIES_FILE project/build.properties
-    else
-        rm project/build.properties
-    fi
     return $sbt_return
 }
 
