@@ -37,15 +37,31 @@ tar -C scala/dists/maven -xvz -f maven.tgz
 
 
 #####################################################
+# Set versions
+#####################################################
+
+set_scala_version
+
+if [ "$SCALAMINOR" = "11" ]; then
+    echo "Integrating with Scala 2.11."
+    SBTHEAD="0.13-2.11"
+    SBINARYHEAD="2.11"
+else
+    echo "Integrating with older Scala."
+    SBTHEAD="0.13"
+    SBINARYHEAD="master"
+fi
+
+#####################################################
 # Clone repos
 #####################################################
 
 # this depends on the fact that the default clone checkout is the
 # dev branch (master or the local equivalent)
-getOrUpdate $SBINARYDIR $SBINARYURL "HEAD"
+getOrUpdate $SBINARYDIR $SBINARYURL $SBINARYHEAD
 # TODO : fix up some symbolic-ref detection for sbt, this is
 # gonna blow up in our face
-getOrUpdate $SBTDIR $SBTURL "HEAD"
+getOrUpdate $SBTDIR $SBTURL $SBTHEAD
 getOrUpdate $SCALARIFORMDIR $SCALARIFORMURL "HEAD"
 getOrUpdate $REFACDIR $REFACURL "HEAD"
 getOrUpdate $IDEDIR $IDEURL "HEAD"
