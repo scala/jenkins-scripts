@@ -191,7 +191,7 @@ function sbtbuild(){
     echo "sbt.override.build.repos=true" >> project/build.properties
 
     set +e
-    sbt $SBT_ARGS "reboot full" clean "show scala-instance" "set every crossScalaVersions := Seq(\"$SCALAVERSION-$SCALAHASH-SNAPSHOT\")"\
+    sbt $SBT_ARGS "reboot full" clean \
      "set every version := \"$SBTVERSION\""\
      "set every scalaVersion := \"$SCALAVERSION-$SCALAHASH-SNAPSHOT\""\
      'set every Util.includeTestDependencies := false' \
@@ -204,6 +204,7 @@ function sbtbuild(){
         'set every credentials := Seq(Credentials(Path.userHome / ".credentials"))' \
         "set every publishTo := Some(Resolver.file(\"file\",  new File(\"$LOCAL_M2_REPO\")))" \
         'set every crossPaths := true' \
+        'show scala-instance' \
         +classpath/publish +logging/publish +io/publish +control/publish +classfile/publish +process/publish +relation/publish +interface/publish +persist/publish +api/publish +compiler-integration/publish +incremental-compiler/publish +compile/publish +compiler-interface/publish
     sbt_return=$?
     set -e
