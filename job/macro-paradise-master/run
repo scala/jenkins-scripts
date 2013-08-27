@@ -34,7 +34,7 @@ ant locker.done # we might be binary incompatible with starr, so no plugin when 
 # well, I actually I have a suspicion that hijacking fastTrack might lead to Universe.reify not being marked as MACRO
 # but I've disabled the hijack when compiling scala-reflect.jar, and the problem still persists
 # ant "-Dscalac.args=\"-Xplugin:$plugin\"" build-opt test.bc
-ant build
+ant build partest.task
 # TODO: make all the tests pass
 # current failures are quite minor, but it's still annoying
 ant "-Dscalac.args.optimise=\"-Xplugin:$plugin\"" test.suite
