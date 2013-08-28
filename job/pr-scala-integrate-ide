@@ -33,6 +33,7 @@ cd $BASEDIR
 # put artifacts from upstream pr-checking-per-commit in place
 mkdir -p scala/dists/maven
 cp build.number scala/
+cp -f versions.properties scala/ || :
 tar -C scala/dists/maven -xvz -f maven.tgz
 
 
