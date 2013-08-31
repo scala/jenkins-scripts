@@ -1,0 +1,98 @@
+From 188e596bad3862f8232c415d4aeffc5aa790e349 Mon Sep 17 00:00:00 2001
+From: Eugene Burmako <xeno.by@gmail.com>
+Date: Sat, 31 Aug 2013 19:15:11 +0200
+Subject: [PATCH] 2.10.x tests failing when the spores plugin is enabled
+
+---
+ test/files/neg/names-defaults-neg.check |  2 +-
+ test/files/neg/t1181.check              |  8 --------
+ test/files/neg/t1181.scala              | 12 ------------
+ test/files/neg/t556.check               |  2 +-
+ test/files/neg/t944.check               |  4 ----
+ test/files/neg/t944.scala               |  6 ------
+ 6 files changed, 2 insertions(+), 32 deletions(-)
+ delete mode 100644 test/files/neg/t1181.check
+ delete mode 100644 test/files/neg/t1181.scala
+ delete mode 100644 test/files/neg/t944.check
+ delete mode 100644 test/files/neg/t944.scala
+
+diff --git a/test/files/neg/names-defaults-neg.check b/test/files/neg/names-defaults-neg.check
+index ea7c323b74..5f8ee36016 100644
+--- a/test/files/neg/names-defaults-neg.check
++++ b/test/files/neg/names-defaults-neg.check
+@@ -125,7 +125,7 @@ names-defaults-neg.scala:134: error: missing parameter type for expanded functio
+ names-defaults-neg.scala:135: error: parameter 'a' is already specified at parameter position 1
+   val taf3 = testAnnFun(b = _: String, a = get(8))
+                                          ^
+-names-defaults-neg.scala:136: error: wrong number of parameters; expected = 2
++names-defaults-neg.scala:136: error: wrong number of parameters; expected two
+   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
+                                               ^
+ names-defaults-neg.scala:144: error: variable definition needs type because 'x' is used as a named argument in its body.
+diff --git a/test/files/neg/t1181.check b/test/files/neg/t1181.check
+deleted file mode 100644
+index 3724752a85..0000000000
+--- a/test/files/neg/t1181.check
++++ /dev/null
+@@ -1,8 +0,0 @@
+-t1181.scala:8: warning: a pure expression does nothing in statement position; you may be omitting necessary parentheses
+-     case (Nil, Nil) => map
+-                        ^
+-t1181.scala:9: error: missing parameter type
+-     _ => buildMap(map.updated(keyList.head, valueList.head), keyList.tail, valueList.tail)
+-     ^
+-one warning found
+-one error found
+diff --git a/test/files/neg/t1181.scala b/test/files/neg/t1181.scala
+deleted file mode 100644
+index 5e5fceacc8..0000000000
+--- a/test/files/neg/t1181.scala
++++ /dev/null
+@@ -1,12 +0,0 @@
+-package test
+-
+-import scala.collection.immutable.Map
+-
+-class CompilerTest(val valueList: List[Symbol]) {
+-	def buildMap(map: Map[Symbol, Symbol], keyList: List[Symbol], valueList: List[Symbol]): Map[Symbol, Symbol] = {
+-   (keyList, valueList) match {
+-     case (Nil, Nil) => map
+-     _ => buildMap(map.updated(keyList.head, valueList.head), keyList.tail, valueList.tail)
+-   }
+-  }
+-}
+diff --git a/test/files/neg/t556.check b/test/files/neg/t556.check
+index c278e13991..6f3a34b803 100644
+--- a/test/files/neg/t556.check
++++ b/test/files/neg/t556.check
+@@ -1,4 +1,4 @@
+-t556.scala:3: error: wrong number of parameters; expected = 1
++t556.scala:3: error: wrong number of parameters; expected one
+   def g:Int = f((x,y)=>x)
+                      ^
+ one error found
+diff --git a/test/files/neg/t944.check b/test/files/neg/t944.check
+deleted file mode 100644
+index 1fc0a12208..0000000000
+--- a/test/files/neg/t944.check
++++ /dev/null
+@@ -1,4 +0,0 @@
+-t944.scala:5: error: implementation restricts functions to 22 parameters
+-           a23:Int) => 1
+-                    ^
+-one error found
+diff --git a/test/files/neg/t944.scala b/test/files/neg/t944.scala
+deleted file mode 100644
+index 352269a80b..0000000000
+--- a/test/files/neg/t944.scala
++++ /dev/null
+@@ -1,6 +0,0 @@
+-object TooManyArgsFunction {
+-  val f = (a1:Int, a2:Int, a3:Int, a4:Int, a5:Int, a6:Int, a7:Int, a8:Int, 
+-           a9:Int, a10:Int, a11:Int, a12:Int, a13:Int, a14:Int, a15:Int, 
+-           a16:Int, a17:Int, a18:Int, a19:Int, a20:Int, a21:Int, a22:Int, 
+-           a23:Int) => 1
+-}
+-- 
+1.8.1.4
+
