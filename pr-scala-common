@@ -85,6 +85,12 @@ function set_scala_version(){
         SCALAPATCH=$(sed $SEDARGS 's/version.patch=([0-9])/\1/p' $SCALADIR/build.number)
     fi
 
+    if [ ! -f $SCALADIR/versions.properties ]; then
+        say "No versions.properties found in $SCALADIR."
+    else
+        SCALA_BINARY_VERSION="$(grep scala\.binary\.version= $SCALADIR/versions.properties | tail -n1 | cut -d= -f2)"
+    fi
+
     SCALAVERSION="$SCALAMAJOR.$SCALAMINOR.$SCALAPATCH"
     SCALASHORT="$SCALAMAJOR.$SCALAMINOR"
     REPO_SUFFIX=$(echo $SCALASHORT|tr -d '.')x

@@ -33,8 +33,27 @@ cd $BASEDIR
 # put artifacts from upstream pr-checking-per-commit in place
 mkdir -p scala/dists/maven
 cp build.number scala/
+cp -f versions.properties scala/ || :
 tar -C scala/dists/maven -xvz -f maven.tgz
 
+
+#####################################################
+# Set versions
+#####################################################
+
+set_scala_version
+
+if [ "$SCALAMINOR" = "11" ]; then
+    echo "Integrating with Scala 2.11."
+    SBTHEAD="0.13-2.11"
+    SBINARYHEAD="2.11"
+    SBINARY_NO_TEST_DEPS="set (includeTestDependencies in core) := false"
+else
+    echo "Integrating with older Scala."
+    SBTHEAD="0.13"
+    SBINARYHEAD="master"
+    SBINARY_NO_TEST_DEPS="set (libraryDependencies in core) ~= { _ filterNot (_.configurations.map(_ contains \"test\").getOrElse(false)) }"
+fi
 
 #####################################################
 # Clone repos
@@ -42,10 +61,10 @@ tar -C scala/dists/maven -xvz -f maven.tgz
 
 # this depends on the fact that the default clone checkout is the
 # dev branch (master or the local equivalent)
-getOrUpdate $SBINARYDIR $SBINARYURL "HEAD"
+getOrUpdate $SBINARYDIR $SBINARYURL $SBINARYHEAD
 # TODO : fix up some symbolic-ref detection for sbt, this is
 # gonna blow up in our face
-getOrUpdate $SBTDIR $SBTURL "HEAD"
+getOrUpdate $SBTDIR $SBTURL $SBTHEAD
 getOrUpdate $SCALARIFORMDIR $SCALARIFORMURL "HEAD"
 getOrUpdate $REFACDIR $REFACURL "HEAD"
 getOrUpdate $IDEDIR $IDEURL "HEAD"
@@ -64,15 +83,12 @@ echo "### SBINARY version detected: \"$SBINARYVERSION\"" | tee -a $LOGGINGDIR/co
 # the order in which the profiles are declared for sbt !
 # WARNING : This picks up the last occurrence of `<sbt.version>` inside pom.xml
 # <--- this is super sensitive stuff ---->
+# TODO: why not refactor the IDE build to make sbt.version a property that can be set from this script?
 SBTVERSION=$(sed $SEDARGS 's/[^t]*<sbt\.version>([0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z]+[0-9]+)?(-SNAPSHOT)?)<\/sbt\.version>.*/\1/p' $IDEDIR/pom.xml|tail -n 1)
 
 # <--- this is super sensitive stuff ---->
 if [ -z $SBTVERSION ]; then exit 125; fi
-echo "### SBT version detected: \"$SBTVERSION\""| tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log
-
-SBT_BOOTSTRAP_VERSION=$(sed $SEDARGS 's/sbt.version=([0-9]+\.[0-9]+\.[0-9]+)/\1/p' $SBTDIR/project/build.properties)
-echo "### SBT bootstraping version detected: \"$SBT_BOOTSTRAP_VERSION\""| tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log
-
+echo "### IDE is expecting SBT version: \"$SBTVERSION\""| tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log
 
 say "### logfile $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log"
 
@@ -93,7 +109,6 @@ publish_scala
 
 preparesbt
 
-
 #####################################################
 # Building Sbinary to a local maven repo, if needed #
 #####################################################
@@ -110,15 +125,18 @@ preparesbt
 # :end docstring:
 
 function sbinarybuild(){
-    if [ -f project/build.properties ]; then
-        OLD_BUILDPROPERTIES_FILE=$(mktemp -t buildpropsXXX)
-        cat project/build.properties > $OLD_BUILDPROPERTIES_FILE
-        sed -i $SEDARGS_ARGS "s/sbt\.version=.*/sbt.version=$SBT_BOOTSTRAP_VERSION/" project/build.properties
-    else
-        echo "sbt.version=$SBT_BOOTSTRAP_VERSION" > project/build.properties
-    fi
     echo "sbt.repository.config=$DEST_REPO_FILE" >> project/build.properties
     echo "sbt.override.build.repos=true" >> project/build.properties
+
+    # When SCALA_BINARY_VERSION is set, we use the following SBT hack
+    # to make sure the modules are resolved using the standard scala binary version,
+    # as we don't rebuild them:
+    # set (libraryDependencies in core) ~= { ld => ld map {
+    #     case dep if (dep.organization == "org.scala-lang.modules") => dep cross CrossVersion.fullMapped(_ => "$SCALA_BINARY_VERSION")
+    #     case dep => dep }
+    # }
+    [[ -z $SCALA_BINARY_VERSION ]] ||\
+      MODULE_VERSIONING="set (libraryDependencies in core) ~= { ld => ld map { case dep if (dep.organization == \"org.scala-lang.modules\") => dep cross CrossVersion.fullMapped(_ => \"$SCALA_BINARY_VERSION\") case dep => dep } }"
 
     set +e
     sbt $SBT_ARGS "reboot full" clean \
@@ -126,9 +144,10 @@ function sbinarybuild(){
   "set (version in core) := \"$SBINARYVERSION\"" \
   "set every crossScalaVersions := Seq(\"$SCALAVERSION-$SCALAHASH-SNAPSHOT\")"\
   'set every scalaBinaryVersion <<= scalaVersion.identity' \
-  'set (libraryDependencies in core) ~= { _ filterNot (_.configurations.map(_ contains "test").getOrElse(false)) }' \
+  "$SBINARY_NO_TEST_DEPS" \
   'set every publishMavenStyle := true' \
   "set every resolvers := Seq(\"Sonatype OSS Snapshots\" at \"https://oss.sonatype.org/content/repositories/snapshots\", \"Typesafe IDE\" at \"https://private-repo.typesafe.com/typesafe/ide-$SCALASHORT\", \"Local maven\" at \"file://$LOCAL_M2_REPO\")" \
+  "$MODULE_VERSIONING" \
   'set every credentials := Seq(Credentials(Path.userHome / ".credentials"))' \
   "set every publishTo := Some(Resolver.file(\"file\",  new File(\"$LOCAL_M2_REPO\")))" \
   'set every crossPaths := true' \
@@ -137,11 +156,6 @@ function sbinarybuild(){
     sbinary_return=$?
     set -e
 
-    if [[ ! -z $OLD_BUILDPROPERTIES_FILE ]]; then
-        mv $OLD_BUILDPROPERTIES_FILE project/build.properties
-    else
-        rm project/build.properties
-    fi
     return $sbinary_return
 }
 
@@ -180,39 +194,37 @@ fi
 # :end docstring:
 
 function sbtbuild(){
-    if [ -f project/build.properties ]; then
-        OLD_BUILDPROPERTIES_FILE=$(mktemp -t buildpropsXXX)
-        cat project/build.properties > $OLD_BUILDPROPERTIES_FILE
-        sed -i $SEDARGS_ARGS "s/sbt\.version=.*/sbt.version=$SBT_BOOTSTRAP_VERSION/" project/build.properties
-    else
-        echo "sbt.version=$SBT_BOOTSTRAP_VERSION" > project/build.properties
-    fi
     echo "sbt.repository.config=$DEST_REPO_FILE" >> project/build.properties
     echo "sbt.override.build.repos=true" >> project/build.properties
 
+
+    # I fought bash for as long as I could bear, but couldn't get
+    # the SCALA_BINARY_VERSION-conditional setup we have above to work
+    # no biggy -- when it's not set, there shouldn't be any dependencies on stuff from organization "org.scala-lang.modules"
+    # (If there are, it's a bug in the validator scripts, which should have the versions.properties file in place that serializes the binary version)
     set +e
-    sbt $SBT_ARGS "reboot full" clean "show scala-instance" "set every crossScalaVersions := Seq(\"$SCALAVERSION-$SCALAHASH-SNAPSHOT\")"\
-     "set every version := \"$SBTVERSION\""\
-     "set every scalaVersion := \"$SCALAVERSION-$SCALAHASH-SNAPSHOT\""\
-     'set every Util.includeTestDependencies := false' \
-        'set every scalaBinaryVersion <<= scalaVersion.identity' \
-        'set (libraryDependencies in compilePersistSub) ~= { ld => ld map { case dep if (dep.organization == "org.scala-tools.sbinary") && (dep.name == "sbinary") => dep.copy(revision = (dep.revision + "-SNAPSHOT")) ; case dep => dep } }' \
-        'set every publishMavenStyle := true' \
-        "set every resolvers := Seq(\"Sonatype OSS Snapshots\" at \"https://oss.sonatype.org/content/repositories/snapshots\", \"Typesafe IDE\" at \"https://private-repo.typesafe.com/typesafe/ide-$SCALASHORT\", \"Local maven\" at \"file://$LOCAL_M2_REPO\")" \
-        'set artifact in (compileInterfaceSub, packageBin) := Artifact("compiler-interface")' \
-        'set publishArtifact in (compileInterfaceSub, packageSrc) := false' \
-        'set every credentials := Seq(Credentials(Path.userHome / ".credentials"))' \
-        "set every publishTo := Some(Resolver.file(\"file\",  new File(\"$LOCAL_M2_REPO\")))" \
-        'set every crossPaths := true' \
-        +classpath/publish +logging/publish +io/publish +control/publish +classfile/publish +process/publish +relation/publish +interface/publish +persist/publish +api/publish +compiler-integration/publish +incremental-compiler/publish +compile/publish +compiler-interface/publish
+    sbt $SBT_ARGS "reboot full" clean \
+      "set (libraryDependencies in cacheSub         ) ~= { ld => ld map { case dep if (dep.organization == \"org.scala-lang.modules\") => dep cross CrossVersion.fullMapped(_ => \"$SCALA_BINARY_VERSION\") case dep => dep } }"\
+      "set (libraryDependencies in compilePersistSub) ~= { ld => ld map { case dep if (dep.organization == \"org.scala-tools.sbinary\") && (dep.name == \"sbinary\") => dep.copy(revision = (dep.revision + \"-SNAPSHOT\")) case dep if (dep.organization == \"org.scala-lang.modules\") => dep cross CrossVersion.fullMapped(_ => \"$SCALA_BINARY_VERSION\") case dep => dep } }"\
+      "set (libraryDependencies in mainSub          ) ~= { ld => ld map { case dep if (dep.organization == \"org.scala-lang.modules\") => dep cross CrossVersion.fullMapped(_ => \"$SCALA_BINARY_VERSION\") case dep => dep } }"\
+      "set (libraryDependencies in processSub       ) ~= { ld => ld map { case dep if (dep.organization == \"org.scala-lang.modules\") => dep cross CrossVersion.fullMapped(_ => \"$SCALA_BINARY_VERSION\") case dep => dep } }"\
+      "set every version := \"$SBTVERSION\""\
+      "set every scalaVersion := \"$SCALAVERSION-$SCALAHASH-SNAPSHOT\""\
+      'set every Util.includeTestDependencies := false' \
+      'set every scalaBinaryVersion <<= scalaVersion.identity' \
+      'set every publishMavenStyle := true' \
+      "set every resolvers := Seq(\"Sonatype OSS Snapshots\" at \"https://oss.sonatype.org/content/repositories/snapshots\", \"Typesafe IDE\" at \"https://private-repo.typesafe.com/typesafe/ide-$SCALASHORT\", \"Local maven\" at \"file://$LOCAL_M2_REPO\")" \
+      'set artifact in (compileInterfaceSub, packageBin) := Artifact("compiler-interface")' \
+      'set publishArtifact in (compileInterfaceSub, packageSrc) := false' \
+      'set every credentials := Seq(Credentials(Path.userHome / ".credentials"))' \
+      "set every publishTo := Some(Resolver.file(\"file\",  new File(\"$LOCAL_M2_REPO\")))" \
+      'set every crossPaths := true' \
+      'show scala-instance' \
+      +classpath/publish +logging/publish +io/publish +control/publish +classfile/publish +process/publish +relation/publish +interface/publish +persist/publish +api/publish +compiler-integration/publish +incremental-compiler/publish +compile/publish +compiler-interface/publish
+
     sbt_return=$?
     set -e
 
-    if [[ ! -z $OLD_BUILDPROPERTIES_FILE ]]; then
-        mv $OLD_BUILDPROPERTIES_FILE project/build.properties
-    else
-        rm project/build.properties
-    fi
     return $sbt_return
 }
 
@@ -316,7 +328,11 @@ MAVEN_OPTS="-Xmx2048m -XX:MaxPermSize=512m"
 cd $IDEDIR
 (test git clean -fxd) || exit 125
 # -Dtycho.disableP2Mirrors=true -- when mirrors are slow
-(test ./build-all.sh $GENMVNOPTS -Psbt-legacy -PretryFlakyTests -DskipTests=false -Dscala.version=$SCALAVERSION-$SCALAHASH-SNAPSHOT -Pscala-$SCALASHORT.x -Peclipse-juno clean install) | tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log
+# ensure maven has enough memory, so we don't depend on whatever was set outside
+(export MAVEN_OPTS="-Xmx2048m -XX:MaxPermSize=256m";
+ test ./build-all.sh $GENMVNOPTS -Pscala-$SCALASHORT.x -Psbt-legacy -PretryFlakyTests -Peclipse-juno\
+    -Dscala.version=$SCALAVERSION-$SCALAHASH-SNAPSHOT -DskipTests=false clean install) |\
+    tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log
 ide_return=${PIPESTATUS[0]}
 if [ $ide_return -ne 0 ]; then
     say "### SCALA-IDE FAILED !"
