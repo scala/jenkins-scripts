@@ -88,6 +88,7 @@ function set_scala_version(){
     SCALAVERSION="$SCALAMAJOR.$SCALAMINOR.$SCALAPATCH"
     SCALASHORT="$SCALAMAJOR.$SCALAMINOR"
     REPO_SUFFIX=$(echo $SCALASHORT|tr -d '.')x
+    SCALA_MAVEN_VERSION="$SCALAVERSION-$SCALAHASH-SNAPSHOT"
 
     if [[ -z $SCALAHASH ]] || [[ -z $SCALADATE ]] || [[ -z $SCALAVERSION ]]; then
         exit 125
@@ -216,12 +217,12 @@ function publish_scala() {
 
   say "### deploying Scala from $SCALADIR/dists/maven/latest"
   (cd $SCALADIR/dists/maven/latest && 
-   test ant -Dlocal.snapshot.repository="$LOCAL_M2_REPO" -Dmaven.version.number="$SCALAVERSION-$SCALAHASH-SNAPSHOT" deploy.local) | tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log
+   test ant -Dlocal.snapshot.repository="$LOCAL_M2_REPO" -Dmaven.version.number="$SCALA_MAVEN_VERSION" deploy.local) | tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log
 
   # Check if the compiler isnt' already in the local maven
   # Note : this assumes if scala-compiler is there, so is scala-library
   set +e
-  do_i_have "org.scala-lang" "scala-compiler" "$SCALAVERSION-$SCALAHASH-SNAPSHOT"
+  do_i_have "org.scala-lang" "scala-compiler" "$SCALA_MAVEN_VERSION"
   deploy_error=$?
   set -e
   if [ $deploy_error -ne 0 ]; then
