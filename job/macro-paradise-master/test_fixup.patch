@@ -1,6 +1,6 @@
-From 04ec0ca1f4724260dba3c0f9622da5e32daefefb Mon Sep 17 00:00:00 2001
+From 2cc7ff19bbaaa381cd9006eafcbaa3e7da5c5f96 Mon Sep 17 00:00:00 2001
 From: Eugene Burmako <xeno.by@gmail.com>
-Date: Mon, 16 Sep 2013 11:43:01 +0200
+Date: Mon, 23 Sep 2013 16:39:39 +0200
 Subject: [PATCH] tests that currently fail for macro paradise
 
 ---
@@ -107,7 +107,7 @@ index fa5c581941..3b08e6480a 100755
 +macroparadise - Empowers production Scala compiler with latest macro developments
  ploogin - A sample plugin for testing.
 diff --git a/test/files/neg/t6446-missing.check b/test/files/neg/t6446-missing.check
-index d4afa9b630..7d63e5d234 100755
+index ba5e30dc05..7d63e5d234 100755
 --- a/test/files/neg/t6446-missing.check
 +++ b/test/files/neg/t6446-missing.check
 @@ -2,36 +2,27 @@ Warning: class not found: t6446.Ploogin
@@ -146,7 +146,7 @@ index d4afa9b630..7d63e5d234 100755
 -           dce  27  optimization: eliminate dead code
 -           jvm  28  generate JVM bytecode
 -      terminal  29  the last phase during a compilation run
--#partest 
+-#partest
 + macroparadise   2  let our powers combine
 +         namer   3  resolve names, attach symbols to named trees in paradise
 +packageobjects   4  load package objects in paradise
@@ -238,7 +238,7 @@ index 10a9e08b86..fe41c548ce 100644
 +      terminal  25  the last phase during a compilation run
 diff --git a/test/files/neg/t6666.scala b/test/files/neg/t6666.scala
 deleted file mode 100644
-index 1919ea3ca9..0000000000
+index 58c5be5405..0000000000
 --- a/test/files/neg/t6666.scala
 +++ /dev/null
 @@ -1,121 +0,0 @@
@@ -362,7 +362,7 @@ index 1919ea3ca9..0000000000
 -    object Nested { def xx = x}
 -    Nested.xx
 -  }
--} with AnyRef 
+-} with AnyRef
 \ No newline at end of file
 diff --git a/test/files/neg/t7494-no-options.check b/test/files/neg/t7494-no-options.check
 index 0bde84c96c..e5c6f6e95a 100644
@@ -480,7 +480,7 @@ index 4e8efa7b6d..46e9e1c521 100644
  hello
 diff --git a/test/files/run/t6259.scala b/test/files/run/t6259.scala
 deleted file mode 100644
-index 294c95e96b..0000000000
+index b2c27df51f..0000000000
 --- a/test/files/run/t6259.scala
 +++ /dev/null
 @@ -1,56 +0,0 @@
@@ -523,9 +523,9 @@ index 294c95e96b..0000000000
 -class DoubleTrouble[X](x: AnyRef)(implicit override val tt: TypeTag[X]) extends A[X]
 -
 -object DoubleOk extends DoubleTrouble[String]({
--  // Drops to this.getClass and is an issue 
--  object InnerTrouble extends A[String]; 
--  InnerTrouble 
+-  // Drops to this.getClass and is an issue
+-  object InnerTrouble extends A[String];
+-  InnerTrouble
 -})
 -
 -object Test extends App {
