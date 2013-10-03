@@ -9,21 +9,21 @@ runSbt () {
 }
 git clean -dfx
 if [[ -d paradise ]]; then rm -rf paradise; fi
-git clone git@github.com:scalamacros/paradise.git -b 2.10.2 paradise
+git clone git@github.com:scalamacros/paradise.git -b 2.11.0 paradise
 if [[ -d scala ]]; then rm -rf scala; fi
-git clone git@github.com:scala/scala.git -b 2.10.x scala
+git clone git@github.com:scala/scala.git -b master scala
 
 # STEP 2: RUN THE TESTS
 cd "$script_dir/paradise"
 runSbt "project tests" test
-plugin=( $(pwd)/plugin/target/scala-2.10/macro-paradise_*.jar )
+plugin=( $(pwd)/plugin/target/scala-2.11.0-SNAPSHOT/macro-paradise_*.jar )
 [[ ! -f "$plugin" ]] && exit 1
 
 # STEP 3: SELECT SCALAC BRANCH AND APPLY OUR PATCHES
 # TODO: make all the tests pass
 # current failures are quite minor, but it's still annoying
 cd "$script_dir/scala"
-git checkout v2.10.2
+git checkout master
 git apply "$script_dir/test_fixup.patch"
 
 # STEP 4: BOOTSTRAP SCALAC USING THE PARADISE PLUGIN
@@ -34,9 +34,10 @@ ant locker.done # we might be binary incompatible with starr, so no plugin when 
 # well, I actually I have a suspicion that hijacking fastTrack might lead to Universe.reify not being marked as MACRO
 # but I've disabled the hijack when compiling scala-reflect.jar, and the problem still persists
 # ant "-Dscalac.args=\"-Xplugin:$plugin\"" build-opt test.bc
-ant build
-cd "$script_dir/scala/test"
-SCALAC_OPTS="-Xplugin:$plugin" ./partest --all
+ant build partest.task
+# TODO: make all the tests pass
+# current failures are quite minor, but it's still annoying
+ant "-Dscalac.args.optimise=\"-Xplugin:$plugin\"" test.suite
 
 # STEP 4: PUBLISH TO SONATYPE
 cd "$script_dir/paradise"
