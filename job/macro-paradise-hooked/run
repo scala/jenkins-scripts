@@ -9,7 +9,7 @@ runSbt () {
 }
 git clean -dfx
 if [[ -d paradise ]]; then rm -rf paradise; fi
-git clone git@github.com:scalamacros/paradise.git -b hooked paradise
+git clone git@github.com:xeno-by/paradise.git -b hooked paradise
 if [[ -d scala ]]; then rm -rf scala; fi
 git clone git@github.com:xeno-by/scala.git -b topic/paradise-hooks scala
 
