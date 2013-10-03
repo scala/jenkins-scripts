@@ -23,7 +23,7 @@ plugin=( $(pwd)/plugin/target/scala-2.10/spores_*.jar )
 # TODO: make all the tests pass
 # current failures are quite minor, but it's still annoying
 cd "$script_dir/scala"
-git checkout v2.10.2 # TODO: change this to v2.10.3 when it's released
+git checkout v2.10.3
 git apply "$script_dir/test_fixup.patch"
 
 # STEP 4: BOOTSTRAP SCALAC USING THE PARADISE PLUGIN
