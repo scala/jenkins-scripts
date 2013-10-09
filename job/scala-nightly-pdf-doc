@@ -28,7 +28,7 @@ cd ../scala-dist/documentation
 
 cat >build.properties <<'TheProps'
 scala.starr.dir=../../scala
-number.file=../../scala/build.number.maven
+number.file=../../scala/build.number
 intro.excludes=**/coercions.*
 TheProps
 echo "Building pdf files..."
