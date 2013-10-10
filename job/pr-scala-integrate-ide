@@ -177,7 +177,7 @@ set -e
 cd $IDEDIR
 (test git clean -fxd) || exit 125
 # -Dtycho.disableP2Mirrors=true -- when mirrors are slow
-(test ./build-all.sh $GENMVNOPTS -Psbt-new -PretryFlakyTests -DskipTests=false -Dscala.version=$SCALA_MAVEN_VERSION -Pscala-$SCALASHORT.x -Peclipse-juno clean install) | tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log
+(test ./build-all.sh $GENMVNOPTS -PretryFlakyTests -DskipTests=false -Dscala.version=$SCALA_MAVEN_VERSION -Pscala-$SCALASHORT.x -Peclipse-juno clean install) | tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log
 ide_return=${PIPESTATUS[0]}
 if [ $ide_return -ne 0 ]; then
     say "### SCALA-IDE FAILED !"
