@@ -39,5 +39,5 @@ cd "$script_dir/scala/test"
 SCALAC_OPTS="-Xplugin:$plugin" ./partest --all
 
 # STEP 4: PUBLISH TO SONATYPE
-cd "$script_dir/spores-plugin"
-runSbt "project spores" publish
+# cd "$script_dir/spores-plugin"
+# runSbt "project spores" publish
