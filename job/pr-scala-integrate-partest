@@ -64,7 +64,7 @@ curl -o $BASEDIR/sbt-launch.jar -s http://repo.typesafe.com/typesafe/ivy-release
 SBT_JAVA_OPTS="-XX:MaxPermSize=384m -Xmx4096M -XX:+CMSClassUnloadingEnabled -XX:ReservedCodeCacheSize=256m -Dsbt.global.base=$SBT_HOME -Dsbt.ivy.home=$IVY_CACHE -Dsbt.log.noformat=true -jar $BASEDIR/sbt-launch.jar"
 
 (cd $PARTESTDIR &&
- java $SBT_JAVA_OPTS "reboot full" clean "set every scalaVersion := \"$SCALAVERSION-$SCALAHASH-SNAPSHOT\"" "show scala-instance" publish-local)
+ java $SBT_JAVA_OPTS "reboot full" clean "set every scalaHome := Some(file(\"$SCALADIR/build/pack\"))" "show scala-instance" publish-local)
 
 # Remove .sbt/repositories scaffolding
 #cleanupsbt
