@@ -1,0 +1,46 @@
+#!/bin/bash -e
+
+BASEDIR=`pwd`
+UBERBUILD_URL="https://github.com/scala-ide/uber-build.git"
+UBERBUILD_DIR="$BASEDIR/uber-build/"
+
+cd $BASEDIR
+
+#####################################################
+# Clone repos
+#####################################################
+
+if [[ -d $UBERBUILD_DIR ]]; then
+  ( cd $UBERBUILD_DIR && git fetch $UBERBUILD_URL HEAD && git checkout -f FETCH_HEAD && git clean -fxd )
+else
+  git clone $UBERBUILD_URL
+fi
+
+# detect sed version and how to enable extended regexes
+SEDARGS="-n$(if (echo "a" | sed -nE "s/a/b/" &> /dev/null); then echo E; else echo r; fi)"
+
+
+# Usage: set_versions
+# Computes the Scala version found in file `build.number`
+function set_scala_version(){
+
+    if [ ! -f build.number ]; then
+        say "No build.number found in $SCALADIR."
+        exit 1
+    else
+        SCALAMAJOR=$(sed $SEDARGS 's/version.major=([0-9])/\1/p' build.number)
+        SCALAMINOR=$(sed $SEDARGS 's/version.minor=([0-9])/\1/p' build.number)
+        SCALAPATCH=$(sed $SEDARGS 's/version.patch=([0-9])/\1/p' build.number)
+    fi
+
+    SCALA_VERSION="$SCALAMAJOR.$SCALAMINOR.$SCALAPATCH"
+    if [[ -z $SCALA_VERSION ]]; then
+        exit 125
+    fi
+
+    echo "### SCALA version detected : $SCALA_VERSION"
+}
+
+set_scala_version
+
+$UBERBUILD_DIR/uber-build.sh $UBERBUILD_DIR/config/validator.conf $sha $SCALA_VERSION
