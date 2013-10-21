@@ -22,9 +22,12 @@ then
   [[ -f $WORKSPACE/mergetarget ]] || (git rev-parse FETCH_HEAD > $WORKSPACE/mergetarget)
   git checkout --detach -f $mergetarget
   git clean -fxd
-  git merge $sha
-  echo "Building commit $sha of #${pullrequest} (merged into ${mergebranch})."
-  (cd $WORKSPACE/ && ./jenkins-scripts/job/$JOB_NAME)
+  if (git merge $sha); then
+      echo "Building commit $sha of #${pullrequest} (merged into ${mergebranch})."
+      (cd $WORKSPACE/ && ./jenkins-scripts/job/$JOB_NAME)
+  else
+      echo "Merge failed for ${sha}. push --force on ${pullrequest}?. Succeeding trivially"
+  fi
 else # build intermediate commits as-is
   echo "Building $sha unless already merged into a (master-like) branch in the repository."
   git fetch origin
