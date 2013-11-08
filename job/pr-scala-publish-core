@@ -32,10 +32,13 @@ case $prDryRun in
   *)
     # "noyoudont" is there juuuust in case
     antDeployArgs="-Dmaven.version.suffix=\"-${sha:0:7}-SNAPSHOT\" -Dremote.snapshot.repository=$prRepoUrl -Drepository.credentials.id=pr-scala -Dremote.release.repository=noyoudont"
-    antBuildArgs="-Dlocker.skip=1" # -Dstarr.use.released=1 should be left up to the build (via versions.properties)
 
     case $version_minor in
       10)
+        # master doesn't currently build with starr, so can't skip locker yet...
+        # TODO: enable for 2.11 once we have bumped versions in versions.properties accordingly
+        antBuildArgs="-Dlocker.skip=1" # -Dstarr.use.released=1 should be left up to the build (via versions.properties)
+
         # TODO: can we move doc generation downstream as well?
         # build to (later) publish with a maven suffix that encodes the first 7 characters of the sha of the commit that we're validating
         # (don't use the sha of the merge commit as we don't have an easy way of passing that down the validation chain)
