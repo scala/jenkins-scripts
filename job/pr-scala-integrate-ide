@@ -10,7 +10,7 @@ scriptsDir="$( cd "$( dirname "$0" )/.." && pwd )"
 parse_properties versions.properties
 
 BASEDIR=`pwd`
-UBERBUILD_URL="https://github.com/scala-ide/uber-build.git"
+UBERBUILD_URL="https://github.com/adriaanm/uber-build.git"
 UBERBUILD_DIR="$BASEDIR/uber-build/"
 
 cd $BASEDIR
