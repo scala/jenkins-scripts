@@ -1,7 +1,8 @@
-#!/bin/bash -x
+#!/bin/bash -e
+
+echo "Dry run? $prDryRun"
 
 scriptsDir="$( cd "$( dirname "$0" )/.." && pwd )"
-
 . $scriptsDir/common
 
 if [ -z $sha ]; then
@@ -13,13 +14,17 @@ cd $WORKSPACE/scala/
 
 gitClean
 
-./pull-binary-libs.sh
+./pull-binary-libs.sh || ./pull-binary-libs
 
-# Build 'locker' without "-Yrangepos", because 'starr' might not have the
-# latest rangepos fixes.
-scalacArgs="-Dscalac.args=\"-Yrangepos\" -Dpartest.scalac_opts=\"-Yrangepos\""
-ant -Dscalac.args.optimise=-optimise locker.done
-ant $scalacArgs build-opt
-
-# No need to run the stability tests
-ant -Dscalac.args.optimise=-optimise $scalacArgs test.suite test.continuations.suite test.scaladoc
+case $prDryRun in
+  yep) mkdir -p build/pack ; mkdir -p dists/maven/latest ;;
+  *)
+    # Build 'locker' without "-Yrangepos", because 'starr' might not have the
+    # latest rangepos fixes.
+    scalacArgs="-Dscalac.args=\"-Yrangepos\" -Dpartest.scalac_opts=\"-Yrangepos\""
+    ant -Dscalac.args.optimise=-optimise locker.done
+    ant $scalacArgs build-opt
+    # No need to run the stability tests
+    ant -Dscalac.args.optimise=-optimise $scalacArgs test.suite test.continuations.suite test.scaladoc
+    ;;
+esac

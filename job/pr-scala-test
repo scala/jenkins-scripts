@@ -1,15 +1,21 @@
-#!/bin/bash -e
+#!/bin/bash -ex
+# PRE:
+#  - artifacts: versions.properties (parsed for maven_version_number)
+#  - on pr maven repo: Scala version $maven_version_number
+# OPTIONAL ENV VARS: 
+#  - $testExtraArgs for any extra arguments to pass to ant
+#  - $testTarget (default is test-opt)
 
 scriptsDir="$( cd "$( dirname "$0" )/.." && pwd )"
-
 . $scriptsDir/common
+. $scriptsDir/pr-scala-common
+
+parse_properties versions.properties
 
 cd $WORKSPACE/scala
 
-# put build folder from upstream pr-scala-distpack in place
-# -m sets modification to now, so that we don't rebuild (sources will have older modification time)
-tar -mxz -f $WORKSPACE/build.tgz
-
 ./pull-binary-libs.sh || ./pull-binary-libs
 
-ant test-opt # TODO: add ant target that doesn't run stability test
+# build quick using STARR built by pr-scala-publish-core (in that sense it's locker, since it was built with starr by that upstream job)
+antArgs="-Dextra.repo.url=$prRepoUrl -Dstarr.version=$maven_version_number -Dlocker.skip=1 -Dstarr.use.released=1"
+ant $antArgs $testExtraArgs ${testTarget-"test-opt"}

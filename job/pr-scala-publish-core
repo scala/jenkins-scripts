@@ -1,0 +1,55 @@
+#!/bin/bash -ex
+# This script publishes the core of Scala to maven for use as locker downstream,
+# and saves the relevant properties used in its build artifacts, versions.properties.
+# (This means we'll use locker instead of quick downstream in dbuild.
+#  The only downside is that backend improvements don't improve compiler performance itself until they are in STARR).
+# The version is suffixed with "-${sha:0:7}-SNAPSHOT"
+#
+# On 2.11, it does the minimal thing: it builds an optimized library/reflect/compiler and publishes it without generating docs.
+# On 2.10, it does a little more work than that because the build refactorings haven't all been backported.
+
+echo "Dry run? $prDryRun"
+
+scriptsDir="$( cd "$( dirname "$0" )/.." && pwd )"
+. $scriptsDir/common
+. $scriptsDir/pr-scala-common
+
+parse_properties scala/build.number
+
+if [ -z $sha ]; then
+  echo "Did not receive a sha environment variable. Should be exported by the jenkins job."
+  exit 1
+fi
+
+cd $WORKSPACE/scala/
+
+gitClean
+
+./pull-binary-libs.sh || ./pull-binary-libs
+
+case $prDryRun in
+  yep) mkdir -p build/pack ; mkdir -p dists/maven/latest ;;
+  *)
+    # "noyoudont" is there juuuust in case
+    antDeployArgs="-Dmaven.version.suffix=\"-${sha:0:7}-SNAPSHOT\" -Dremote.snapshot.repository=$prRepoUrl -Drepository.credentials.id=pr-scala -Dremote.release.repository=noyoudont"
+
+    case $version_minor in
+      10)
+        # master doesn't currently build with starr, so can't skip locker yet...
+        # TODO: enable for 2.11 once we have bumped versions in versions.properties accordingly
+        antBuildArgs="-Dlocker.skip=1" # -Dstarr.use.released=1 should be left up to the build (via versions.properties)
+
+        # TODO: can we move doc generation downstream as well?
+        # build to (later) publish with a maven suffix that encodes the first 7 characters of the sha of the commit that we're validating
+        # (don't use the sha of the merge commit as we don't have an easy way of passing that down the validation chain)
+        ant -Darchives.skipxz=true $antDeployArgs $antBuildArgs distpack-maven-opt
+
+        cd dists/maven/latest
+        ant $antDeployArgs deploy-core.snapshot
+      ;;
+      11)
+        ant $antDeployArgs $antBuildArgs publish-opt-nodocs
+    esac
+
+    mv $WORKSPACE/scala/buildcharacter.properties $WORKSPACE/versions.properties
+esac

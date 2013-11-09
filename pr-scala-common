@@ -58,44 +58,22 @@ function getOrUpdate(){
 }
 
 
-# :docstring set_versions:
-# Usage: set_versions
-# Computes the hashes governing the version mangling of Scala/sbt/sbinary
+# :docstring parse_properties:
+# Usage: parse_properties javaPropertyFile
+# Exports variables set in property file under $BASEDIR, mangling names by replacing dots with _
 # :end docstring:
 
-function set_scala_version(){
-    if [[ -z $SCALAHASH ]] ; then
-      say "Need a git hash to build, specify with -h."
+function parse_properties(){
+    propFile="$BASEDIR/$1"
+    if [ ! -f $propFile ]; then
+      say "Property file $propFile not found."
       exit 1
-    fi
-
-    # limit to 7 chars
-    SCALAHASH=${SCALAHASH:0:7}
-
-    # despite the name, this has nothing to do with Scala, it's a
-    # vanilla timestamp
-    SCALADATE=$(date +%Y-%m-%d-%H%M%S)
-
-    if [ ! -f $SCALADIR/build.number ]; then
-        say "No build.number found in $SCALADIR."
-        exit 1      
     else
-        SCALAMAJOR=$(sed $SEDARGS 's/version.major=([0-9])/\1/p' $SCALADIR/build.number)
-        SCALAMINOR=$(sed $SEDARGS 's/version.minor=([0-9])/\1/p' $SCALADIR/build.number)
-        SCALAPATCH=$(sed $SEDARGS 's/version.patch=([0-9])/\1/p' $SCALADIR/build.number)
+      awk -f "$scriptsDir/readproperties.awk" "$propFile" > "$propFile.sh"
+      . "$propFile.sh" # yeah yeah, not that secure, improvements welcome (I tried, but bash made me cry again)
     fi
-
-    SCALAVERSION="$SCALAMAJOR.$SCALAMINOR.$SCALAPATCH"
-    SCALASHORT="$SCALAMAJOR.$SCALAMINOR"
-    REPO_SUFFIX=$(echo $SCALASHORT|tr -d '.')x
-    SCALA_MAVEN_VERSION="$SCALAVERSION-$SCALAHASH-SNAPSHOT"
-
-    if [[ -z $SCALAHASH ]] || [[ -z $SCALADATE ]] || [[ -z $SCALAVERSION ]]; then
-        exit 125
-    fi
-
-    echo "### SCALA version detected : $SCALAVERSION-$SCALAHASH"| tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log
 }
+
 
 
 # :docstring ant-clean:
@@ -207,33 +185,6 @@ function maven_fail_detect() {
 }
 
 
-######################################################
-# Wipe $LOCAL_M2_REPO/org/scala-lang (to avoid accumulating old scala builds)
-# Publish pre-built scala to local maven repo        #
-######################################################
-function publish_scala() {
-  say "### Wiping $LOCAL_M2_REPO/org/scala-lang"
-  rm -rf $LOCAL_M2_REPO/org/scala-lang
-
-  say "### deploying Scala from $SCALADIR/dists/maven/latest"
-  (cd $SCALADIR/dists/maven/latest && 
-   test ant -Dlocal.snapshot.repository="$LOCAL_M2_REPO" -Dmaven.version.number="$SCALA_MAVEN_VERSION" deploy.local) | tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log
-
-  # Check if the compiler isnt' already in the local maven
-  # Note : this assumes if scala-compiler is there, so is scala-library
-  set +e
-  do_i_have "org.scala-lang" "scala-compiler" "$SCALA_MAVEN_VERSION"
-  deploy_error=$?
-  set -e
-  if [ $deploy_error -ne 0 ]; then
-      say "### the Scala compiler was not found in local maven $LOCAL_M2_REPO,"
-      exit 1
-  else
-      say "### the Scala compiler was found in local maven $LOCAL_M2_REPO for $SCALAHASH"
-  fi
-}
-
-
 # :docstring preparesbt:
 # Usage: preparesbt
 # This lets sbt know to look for the local maven repository.
@@ -268,6 +219,7 @@ function preparesbt(){
   sonatype-snapshots: https://oss.sonatype.org/content/repositories/snapshots
   sonatype-releases: https://oss.sonatype.org/content/repositories/releases
   mavenLocal: file://$LOCAL_M2_REPO
+  prRepo: $prRepoUrl
 EOF
 }
 

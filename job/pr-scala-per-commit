@@ -1,12 +1,21 @@
 #!/bin/bash -e
 
-# if there's a mergetarget file (created by pr-scala-distpack, and copied as artifacts by downstream jobs),
-# use that as the sha to merge to, so that downstream jobs from pr-scala-distpack
-# use the same sha for their $mergebranch ref as the distpack job itself
-# this assumes $mergebranch increases strictly monotonically over time
-# (e.g, whatever master was during distpack, that sha will still be fetched by fetch $mergebranch later,
-# even though the resulting FETCH_HEAD will have moved past $mergetarget)
-mergetarget=$( cat $WORKSPACE/mergetarget || echo FETCH_HEAD )
+echo "Dry run? $prDryRun"
+
+case $JOB_NAME in
+  pr-scala-publish-core|pr-scala-rangepos)
+    echo "Deleting stale mergetarget -- will be created by this job."
+    rm -f $WORKSPACE/mergetarget
+    mergetarget="FETCH_HEAD" ;;
+  # if there's a mergetarget file (created by pr-scala-publish-core, and copied as artifacts by downstream jobs),
+  # use that as the sha to merge to, so that downstream jobs from pr-scala-publish-core
+  # use the same sha for their $mergebranch ref as the distpack job itself
+  # this assumes $mergebranch increases strictly monotonically over time
+  # (e.g, whatever master was during distpack, that sha will still be fetched by fetch $mergebranch later,
+  # even though the resulting FETCH_HEAD will have moved past $mergetarget)
+  *)
+    mergetarget=$( cat $WORKSPACE/mergetarget || echo FETCH_HEAD ) ;;
+esac
 
 cd $WORKSPACE/scala/
 
@@ -16,7 +25,6 @@ git fetch origin "+pull/${pullrequest}/head:pullreq/${pullrequest}"
 if [ "EMPTY$(git rev-list $sha..pullreq/${pullrequest})" = "EMPTY" ]
 then 
   echo "Merging head $sha of #${pullrequest} into ${mergebranch}."
-  git fetch origin --depth 10000 # we once did a shallow clone and jenkins is making us pay for it (unchecking shallow clone does not "unshallow" it)
   git fetch origin $mergebranch
   # if no mergetarget file present, save it for downstream jobs
   [[ -f $WORKSPACE/mergetarget ]] || (git rev-parse FETCH_HEAD > $WORKSPACE/mergetarget)

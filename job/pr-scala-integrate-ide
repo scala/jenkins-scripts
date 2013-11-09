@@ -1,194 +1,45 @@
-#!/bin/bash -e
+#!/bin/bash -ex
+# PRE:
+#  - vars: sha
+#  - artifacts: versions.properties (parsed for maven_version_number)
+#  - on pr maven repo: Scala version $maven_version_number
 
-# Set DBUILDURL (and BRANCH) good defaults if not set (or null)
-: ${DBUILDURL:="https://github.com/typesafehub/sbt-builds-for-ide.git"}
-: ${DBUILDBRANCH:="master"}
-SCALARIFORMURL="https://github.com/mdr/scalariform.git"
-REFACURL="https://github.com/scala-ide/scala-refactoring.git"
-IDEURL="https://github.com/scala-ide/scala-ide.git"
+scriptsDir="$( cd "$( dirname "$0" )/.." && pwd )"
+. $scriptsDir/common
+. $scriptsDir/pr-scala-common
+parse_properties versions.properties
 
-
-####################################################################
-# Build the whole chain from Scala (presumably downloaded from     #
-# private-repo) to Scala-IDE, cloning or fetching checkouts of     #
-# the elements of said chain in $BASEDIR.                          #
-####################################################################
-
-scriptsDir="$( cd "$( dirname "$0" )" && pwd )"
-source $scriptsDir/../pr-scala-common
-
-#####################
-# BEGIN MAIN SCRIPT #
-#####################
-
-main
-
-DBUILDDIR="$BASEDIR/sbt-builds-for-ide"
-REFACDIR="$BASEDIR/scala-refactoring/"
-SCALARIFORMDIR="$BASEDIR/scalariform"
-IDEDIR="$BASEDIR/scala-ide/"
+BASEDIR=`pwd`
+UBERBUILD_URL="https://github.com/adriaanm/uber-build.git"
+UBERBUILD_DIR="$BASEDIR/uber-build/"
 
 cd $BASEDIR
-
-# put artifacts from upstream pr-checking-per-commit in place
-mkdir -p scala/dists/maven
-cp build.number scala/
-tar -C scala/dists/maven -xvz -f maven.tgz
-
 
 #####################################################
 # Clone repos
 #####################################################
 
-# this depends on the fact that the default clone checkout is the
-# dev branch (master or the local equivalent)
-getOrUpdate $DBUILDDIR $DBUILDURL $DBUILDBRANCH
-getOrUpdate $SCALARIFORMDIR $SCALARIFORMURL "HEAD"
-getOrUpdate $REFACDIR $REFACURL "HEAD"
-getOrUpdate $IDEDIR $IDEURL "HEAD"
-
-#####################################################
-# Set versions
-#####################################################
-
-set_scala_version
-
-#
-# NOTE: This should be in sync with what dbuild publishes and what the IDE
-#       specifies in pom.xml
-SBTVERSION=0.13.0
-
-say "### logfile $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log"
-
-# version logging
-(test mvn -version) | tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log || exit 125
-
-
-#####################################################
-# Publish scala
-#####################################################
-
-publish_scala
-
-########################
-# Building Zinc        #
-########################
-
-# :docstring dbuild_zincbuild:
-# Usage: dbuild_zincbuild
-# Builds incremental compiler components for the IDE using dbuild, and makes them available in maven.
-# Configuration is retrieved from $DBUILDURL
-# :end docstring:
-
-function dbuild_zincbuild()
-{
-    say "### Running dbuild"
-    cd ${DBUILDDIR}
-
-    # Pass the scala version to dbuild (note the `_`),
-    # the target repository for sbt artifacts,
-    # and the local maven repository (where this particular Scala version can be found)
-    SCALA_VERSION=$SCALA_MAVEN_VERSION \
-    PUBLISH_REPO=file://$LOCAL_M2_REPO \
-    LOCAL_M2_REPO=$LOCAL_M2_REPO bin/dbuild sbt-on-${SCALASHORT}.x
-}
-
-# TODO : This assumes if we have one of the projects in
-# dbuild_zincbuild() above, we have them all. This is brittle if the sbt
-# subproject dependency we test for (here, incremental-compiler) changes.
-
-set +e
-do_i_have "com.typesafe.sbt" "incremental-compiler" "$SBTVERSION-on-${SCALAVERSION}-${SCALAHASH}-SNAPSHOT-for-IDE-SNAPSHOT"
-sbtres=$?
-set -e
-
-if [ $sbtres -ne 0 ]; then
-    dbuild_zincbuild
-    dbuild_return=$?
-    if [ $dbuild_return -ne 0 ]; then
-        say "### dbuild FAILED !"
-        exit 1
-    else
-        say "### dbuild SUCCESS !"
-    fi
-fi
-
-export MAVEN_OPTS="-Xmx2048m -XX:MaxPermSize=512m"
-
-########################
-# Building scalarifom  #
-########################
-# :docstring scalariformbuild:
-# Usage: scalariformbuild
-# Builds scalariform and makes it available in maven.
-# :end docstring:
-
-function scalariformbuild()
-{
-    # build scalariform
-    say "### Building Scalariform"
-    cd ${SCALARIFORMDIR}
-
-    GIT_HASH=$(git rev-parse HEAD)
-
-    mvn $GENMVNOPTS -Pscala-$SCALASHORT.x -Dscala.version=$SCALA_MAVEN_VERSION -Dmaven.repo.local=$LOCAL_M2_REPO clean install
-}
-
-cd $SCALARIFORMDIR
-
-(test scalariformbuild) | tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log
-scalariform_return=${PIPESTATUS[0]}
-if [ $scalariform_return -ne 0 ]; then
-    say "### SCALARIFORM FAILED !"
-    exit 1
+if [[ -d $UBERBUILD_DIR ]]; then
+  ( cd $UBERBUILD_DIR && git fetch $UBERBUILD_URL HEAD && git checkout -f FETCH_HEAD && git clean -fxd )
 else
-    say "### SCALARIFORM SUCCESS !"
+  git clone $UBERBUILD_URL
 fi
 
+# pass prRepoUrl in, which uber-build passes along to dbuild (in sbt-builds-for-ide)
+# the "-P pr-scala" maven arg accomplishes the same thing for maven (directly used in uber-build)
+prRepoUrl="$prRepoUrl"\
+  MAVEN_ARGS="-P pr-scala"\
+    $UBERBUILD_DIR/uber-build.sh $UBERBUILD_DIR/config/validator.conf $sha $maven_version_number
 
-################################
-# Building scala-refactoring   #
-################################
-# Note : because scala-refactoring is a dependency that is linked
-# to (from IDE) completely dynamically (read : w/o version requirements)
-# from custom update sites, looking for a maven artifact in a
-# local package is fragile to the point of uselessness. Hence we
-# have to rebuild it every time.
-cd $REFACDIR
-(test git clean -fxd) || exit 125
-(test mvn $GENMVNOPTS -DskipTests=false -Dscala.version=$SCALA_MAVEN_VERSION -Pscala-$SCALASHORT.x -Dgpg.skip=true clean install) | tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log
-refac_return=${PIPESTATUS[0]}
-if [ $refac_return -ne 0 ]; then
-    say "### SCALA-REFACTORING FAILED !"
-    exit 1
-else
-    say "### SCALA-REFACTORING SUCCESS !"
-fi
 
-# Tricky : this turns off fail on error, but test() lifts the
-# restriction by killing the overall script in case of failure detection.
-set +e
-test maven_fail_detect "DontStopOnSuccess"
-set -e
-
-######################
-# Building scala-ide #
-######################
-cd $IDEDIR
-(test git clean -fxd) || exit 125
-# -Dtycho.disableP2Mirrors=true -- when mirrors are slow
-(test ./build-all.sh $GENMVNOPTS -PretryFlakyTests -DskipTests=false -Dscala.version=$SCALA_MAVEN_VERSION -Pscala-$SCALASHORT.x -Peclipse-juno clean install) | tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log
-ide_return=${PIPESTATUS[0]}
-if [ $ide_return -ne 0 ]; then
-    say "### SCALA-IDE FAILED !"
-else
-    say "### SCALA-IDE SUCCESS !"
-fi
-set +e
-test maven_fail_detect
-set -e
-exit 0
-
-###################
-# END MAIN SCRIPT #
-###################
+# this assumes ~/.m2/settings.xml contains
+# <profile>
+#   <id>pr-scala</id>
+#   <repositories>
+#     <repository>
+#       <id>pr-snapshots</id>
+#       <name>Scala PR validation snapshots</name>
+#       <url>$prRepoUrl</url>
+#     </repository>
+#   </repositories>
+# </profile>
