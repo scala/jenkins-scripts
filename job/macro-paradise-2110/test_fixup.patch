@@ -1,28 +1,28 @@
-From c72eb72a0b504b7b67c52b15fd140978aac51971 Mon Sep 17 00:00:00 2001
+From 7bbb04d73dd314112fcd94edf58fac7ac785b3f3 Mon Sep 17 00:00:00 2001
 From: Eugene Burmako <xeno.by@gmail.com>
-Date: Sun, 27 Oct 2013 19:58:53 -0400
+Date: Sat, 9 Nov 2013 20:40:41 +0100
 Subject: [PATCH] tests that currently fail for macro paradise
 
 ---
  test/files/jvm/t7006.check              |   1 +
- test/files/neg/t6446-additional.check   |  60 +++++++---------
+ test/files/neg/t6446-additional.check   |  62 +++++++---------
  test/files/neg/t6446-list.check         |   1 +
- test/files/neg/t6446-missing.check      |  57 +++++++--------
- test/files/neg/t6446-show-phases.check  |  57 +++++++--------
+ test/files/neg/t6446-missing.check      |  59 +++++++---------
+ test/files/neg/t6446-show-phases.check  |  59 +++++++---------
  test/files/neg/t6666.scala              | 121 --------------------------------
- test/files/neg/t7494-no-options.check   |  60 +++++++---------
+ test/files/neg/t7494-no-options.check   |  62 +++++++---------
  test/files/neg/t800.check               |   3 +-
  test/files/pos/t7426.scala              |   3 -
  test/files/run/t6102.check              |   7 +-
  test/files/run/t6259.scala              |  56 ---------------
  test/files/scalap/typeAnnotations.check |   2 +-
- 12 files changed, 103 insertions(+), 325 deletions(-)
+ 12 files changed, 107 insertions(+), 329 deletions(-)
  delete mode 100644 test/files/neg/t6666.scala
  delete mode 100644 test/files/pos/t7426.scala
  delete mode 100644 test/files/run/t6259.scala
 
 diff --git a/test/files/jvm/t7006.check b/test/files/jvm/t7006.check
-index 7c99eba30c..65b3b46a19 100644
+index 6294b14d62..881d431a9c 100644
 --- a/test/files/jvm/t7006.check
 +++ b/test/files/jvm/t7006.check
 @@ -1,4 +1,5 @@
@@ -32,10 +32,10 @@ index 7c99eba30c..65b3b46a19 100644
  [running phase packageobjects on Foo_1.scala]
  [running phase typer on Foo_1.scala]
 diff --git a/test/files/neg/t6446-additional.check b/test/files/neg/t6446-additional.check
-index c91333830a..66c9462f05 100755
+index a87af2f1e5..fe5c2627ef 100755
 --- a/test/files/neg/t6446-additional.check
 +++ b/test/files/neg/t6446-additional.check
-@@ -1,38 +1,28 @@
+@@ -1,39 +1,29 @@
      phase name  id  description
      ----------  --  -----------
          parser   1  parse source into ASTs, perform simple desugaring
@@ -59,20 +59,21 @@ index c91333830a..66c9462f05 100755
 -       flatten  19  eliminate inner classes
 -         mixin  20  mixin composition
 -       cleanup  21  platform-specific cleanups, generate reflective calls
--         icode  22  generate portable intermediate code
+-    delambdafy  22  remove lambdas
+-         icode  23  generate portable intermediate code
 -#partest -optimise
--       inliner  23  optimization: do inlining
--inlinehandlers  24  optimization: inline exception handlers
--      closelim  25  optimization: eliminate uncalled closures
--      constopt  26  optimization: optimize null and other constants
--           dce  27  optimization: eliminate dead code
--           jvm  28  generate JVM bytecode
--       ploogin  29  A sample phase that does so many things it's kind of hard...
--      terminal  30  the last phase during a compilation run
+-       inliner  24  optimization: do inlining
+-inlinehandlers  25  optimization: inline exception handlers
+-      closelim  26  optimization: eliminate uncalled closures
+-      constopt  27  optimization: optimize null and other constants
+-           dce  28  optimization: eliminate dead code
+-           jvm  29  generate JVM bytecode
+-       ploogin  30  A sample phase that does so many things it's kind of hard...
+-      terminal  31  the last phase during a compilation run
 -#partest !-optimise
--           jvm  23  generate JVM bytecode
--       ploogin  24  A sample phase that does so many things it's kind of hard...
--      terminal  25  the last phase during a compilation run
+-           jvm  24  generate JVM bytecode
+-       ploogin  25  A sample phase that does so many things it's kind of hard...
+-      terminal  26  the last phase during a compilation run
 -#partest
 + macroparadise   2  let our powers combine
 +         namer   3  resolve names, attach symbols to named trees in paradise
@@ -95,10 +96,11 @@ index c91333830a..66c9462f05 100755
 +       flatten  20  eliminate inner classes
 +         mixin  21  mixin composition
 +       cleanup  22  platform-specific cleanups, generate reflective calls
-+         icode  23  generate portable intermediate code
-+           jvm  24  generate JVM bytecode
-+       ploogin  25  A sample phase that does so many things it's kind of hard...
-+      terminal  26  the last phase during a compilation run
++    delambdafy  23  remove lambdas
++         icode  24  generate portable intermediate code
++           jvm  25  generate JVM bytecode
++       ploogin  26  A sample phase that does so many things it's kind of hard...
++      terminal  27  the last phase during a compilation run
 diff --git a/test/files/neg/t6446-list.check b/test/files/neg/t6446-list.check
 index fa5c581941..3b08e6480a 100755
 --- a/test/files/neg/t6446-list.check
@@ -107,10 +109,10 @@ index fa5c581941..3b08e6480a 100755
 +macroparadise - Empowers production Scala compiler with latest macro developments
  ploogin - A sample plugin for testing.
 diff --git a/test/files/neg/t6446-missing.check b/test/files/neg/t6446-missing.check
-index b2d5ddd686..6a0bbe42b7 100755
+index cd867289c3..a1d7afedaf 100755
 --- a/test/files/neg/t6446-missing.check
 +++ b/test/files/neg/t6446-missing.check
-@@ -2,36 +2,27 @@ Warning: class not found: t6446.Ploogin
+@@ -2,37 +2,28 @@ Warning: class not found: t6446.Ploogin
      phase name  id  description
      ----------  --  -----------
          parser   1  parse source into ASTs, perform simple desugaring
@@ -134,18 +136,19 @@ index b2d5ddd686..6a0bbe42b7 100755
 -       flatten  19  eliminate inner classes
 -         mixin  20  mixin composition
 -       cleanup  21  platform-specific cleanups, generate reflective calls
--         icode  22  generate portable intermediate code
+-    delambdafy  22  remove lambdas
+-         icode  23  generate portable intermediate code
 -#partest !-optimise
--           jvm  23  generate JVM bytecode
--      terminal  24  the last phase during a compilation run
+-           jvm  24  generate JVM bytecode
+-      terminal  25  the last phase during a compilation run
 -#partest -optimise
--       inliner  23  optimization: do inlining
--inlinehandlers  24  optimization: inline exception handlers
--      closelim  25  optimization: eliminate uncalled closures
--      constopt  26  optimization: optimize null and other constants
--           dce  27  optimization: eliminate dead code
--           jvm  28  generate JVM bytecode
--      terminal  29  the last phase during a compilation run
+-       inliner  24  optimization: do inlining
+-inlinehandlers  25  optimization: inline exception handlers
+-      closelim  26  optimization: eliminate uncalled closures
+-      constopt  27  optimization: optimize null and other constants
+-           dce  28  optimization: eliminate dead code
+-           jvm  29  generate JVM bytecode
+-      terminal  30  the last phase during a compilation run
 -#partest
 + macroparadise   2  let our powers combine
 +         namer   3  resolve names, attach symbols to named trees in paradise
@@ -168,14 +171,15 @@ index b2d5ddd686..6a0bbe42b7 100755
 +       flatten  20  eliminate inner classes
 +         mixin  21  mixin composition
 +       cleanup  22  platform-specific cleanups, generate reflective calls
-+         icode  23  generate portable intermediate code
-+           jvm  24  generate JVM bytecode
-+      terminal  25  the last phase during a compilation run
++    delambdafy  23  remove lambdas
++         icode  24  generate portable intermediate code
++           jvm  25  generate JVM bytecode
++      terminal  26  the last phase during a compilation run
 diff --git a/test/files/neg/t6446-show-phases.check b/test/files/neg/t6446-show-phases.check
-index 48d4f37b3e..025eb2cad4 100644
+index 3ae3f96ef2..f817aeee74 100644
 --- a/test/files/neg/t6446-show-phases.check
 +++ b/test/files/neg/t6446-show-phases.check
-@@ -1,36 +1,27 @@
+@@ -1,37 +1,28 @@
      phase name  id  description
      ----------  --  -----------
          parser   1  parse source into ASTs, perform simple desugaring
@@ -199,18 +203,19 @@ index 48d4f37b3e..025eb2cad4 100644
 -       flatten  19  eliminate inner classes
 -         mixin  20  mixin composition
 -       cleanup  21  platform-specific cleanups, generate reflective calls
--         icode  22  generate portable intermediate code
+-    delambdafy  22  remove lambdas
+-         icode  23  generate portable intermediate code
 -#partest !-optimise
--           jvm  23  generate JVM bytecode
--      terminal  24  the last phase during a compilation run
+-           jvm  24  generate JVM bytecode
+-      terminal  25  the last phase during a compilation run
 -#partest -optimise
--       inliner  23  optimization: do inlining
--inlinehandlers  24  optimization: inline exception handlers
--      closelim  25  optimization: eliminate uncalled closures
--      constopt  26  optimization: optimize null and other constants
--           dce  27  optimization: eliminate dead code
--           jvm  28  generate JVM bytecode
--      terminal  29  the last phase during a compilation run
+-       inliner  24  optimization: do inlining
+-inlinehandlers  25  optimization: inline exception handlers
+-      closelim  26  optimization: eliminate uncalled closures
+-      constopt  27  optimization: optimize null and other constants
+-           dce  28  optimization: eliminate dead code
+-           jvm  29  generate JVM bytecode
+-      terminal  30  the last phase during a compilation run
 -#partest
 + macroparadise   2  let our powers combine
 +         namer   3  resolve names, attach symbols to named trees in paradise
@@ -233,9 +238,10 @@ index 48d4f37b3e..025eb2cad4 100644
 +       flatten  20  eliminate inner classes
 +         mixin  21  mixin composition
 +       cleanup  22  platform-specific cleanups, generate reflective calls
-+         icode  23  generate portable intermediate code
-+           jvm  24  generate JVM bytecode
-+      terminal  25  the last phase during a compilation run
++    delambdafy  23  remove lambdas
++         icode  24  generate portable intermediate code
++           jvm  25  generate JVM bytecode
++      terminal  26  the last phase during a compilation run
 diff --git a/test/files/neg/t6666.scala b/test/files/neg/t6666.scala
 deleted file mode 100644
 index 58c5be5405..0000000000
@@ -365,10 +371,10 @@ index 58c5be5405..0000000000
 -} with AnyRef
 \ No newline at end of file
 diff --git a/test/files/neg/t7494-no-options.check b/test/files/neg/t7494-no-options.check
-index b5dc0e3d4f..bcccbdbb8c 100644
+index e3316f590a..04f1257515 100644
 --- a/test/files/neg/t7494-no-options.check
 +++ b/test/files/neg/t7494-no-options.check
-@@ -2,38 +2,28 @@ error: Error: ploogin takes no options
+@@ -2,39 +2,29 @@ error: Error: ploogin takes no options
      phase name  id  description
      ----------  --  -----------
          parser   1  parse source into ASTs, perform simple desugaring
@@ -392,20 +398,21 @@ index b5dc0e3d4f..bcccbdbb8c 100644
 -       flatten  19  eliminate inner classes
 -         mixin  20  mixin composition
 -       cleanup  21  platform-specific cleanups, generate reflective calls
--         icode  22  generate portable intermediate code
+-    delambdafy  22  remove lambdas
+-         icode  23  generate portable intermediate code
 -#partest !-optimise
--           jvm  23  generate JVM bytecode
--       ploogin  24  A sample phase that does so many things it's kind of hard...
--      terminal  25  the last phase during a compilation run
+-           jvm  24  generate JVM bytecode
+-       ploogin  25  A sample phase that does so many things it's kind of hard...
+-      terminal  26  the last phase during a compilation run
 -#partest -optimise
--       inliner  23  optimization: do inlining
--inlinehandlers  24  optimization: inline exception handlers
--      closelim  25  optimization: eliminate uncalled closures
--      constopt  26  optimization: optimize null and other constants
--           dce  27  optimization: eliminate dead code
--           jvm  28  generate JVM bytecode
--       ploogin  29  A sample phase that does so many things it's kind of hard...
--      terminal  30  the last phase during a compilation run
+-       inliner  24  optimization: do inlining
+-inlinehandlers  25  optimization: inline exception handlers
+-      closelim  26  optimization: eliminate uncalled closures
+-      constopt  27  optimization: optimize null and other constants
+-           dce  28  optimization: eliminate dead code
+-           jvm  29  generate JVM bytecode
+-       ploogin  30  A sample phase that does so many things it's kind of hard...
+-      terminal  31  the last phase during a compilation run
 -#partest
 + macroparadise   2  let our powers combine
 +         namer   3  resolve names, attach symbols to named trees in paradise
@@ -428,10 +435,11 @@ index b5dc0e3d4f..bcccbdbb8c 100644
 +       flatten  20  eliminate inner classes
 +         mixin  21  mixin composition
 +       cleanup  22  platform-specific cleanups, generate reflective calls
-+         icode  23  generate portable intermediate code
-+           jvm  24  generate JVM bytecode
-+       ploogin  25  A sample phase that does so many things it's kind of hard...
-+      terminal  26  the last phase during a compilation run
++    delambdafy  23  remove lambdas
++         icode  24  generate portable intermediate code
++           jvm  25  generate JVM bytecode
++       ploogin  26  A sample phase that does so many things it's kind of hard...
++      terminal  27  the last phase during a compilation run
 diff --git a/test/files/neg/t800.check b/test/files/neg/t800.check
 index 8ba95fddde..37a0c6f324 100644
 --- a/test/files/neg/t800.check
@@ -456,7 +464,7 @@ index 8e42ad1812..0000000000
 -
 -@foo(new AnyRef { }) trait A
 diff --git a/test/files/run/t6102.check b/test/files/run/t6102.check
-index 4e8efa7b6d..46e9e1c521 100644
+index aa3e6cc9e2..677cbaf939 100644
 --- a/test/files/run/t6102.check
 +++ b/test/files/run/t6102.check
 @@ -1,4 +1,5 @@
@@ -465,9 +473,9 @@ index 4e8efa7b6d..46e9e1c521 100644
  [running phase namer on t6102.scala]
  [running phase packageobjects on t6102.scala]
  [running phase typer on t6102.scala]
-@@ -20,12 +21,6 @@
- [running phase mixin on t6102.scala]
+@@ -21,12 +22,6 @@
  [running phase cleanup on t6102.scala]
+ [running phase delambdafy on t6102.scala]
  [running phase icode on t6102.scala]
 -#partest -optimise
 -[running phase inliner on t6102.scala]
@@ -555,5 +563,5 @@ index cba69f8e41..d72817a725 100644
 +  val x: scala.Int = { /* compiled code */ }
  }
 -- 
-1.8.4
+1.8.4.1
 
