@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash -e
 # This script publishes the core of Scala to maven for use as locker downstream,
 # and saves the relevant properties used in its build artifacts, versions.properties.
 # (This means we'll use locker instead of quick downstream in dbuild.
@@ -48,7 +48,20 @@ case $prDryRun in
         ant $antDeployArgs deploy-core.snapshot
       ;;
       11)
-        ant $antDeployArgs $antBuildArgs publish-opt-nodocs
+        echo ">>> Getting Scala version number."
+        ant -q $antDeployArgs init
+        parse_properties scala/buildcharacter.properties
+
+        echo ">>> Checking availability of Scala ${maven_version_number} in $prRepoUrl."
+        checkAvailability "org.scala-lang" "scala-library"  "${maven_version_number}" $prRepoUrl; libraryAvailable=$RES
+        checkAvailability "org.scala-lang" "scala-reflect"  "${maven_version_number}" $prRepoUrl; reflectAvailable=$RES
+        checkAvailability "org.scala-lang" "scala-compiler" "${maven_version_number}" $prRepoUrl; compilerAvailable=$RES
+
+        if $libraryAvailable && $reflectAvailable && $compilerAvailable; then
+          echo "Scala core already built!"
+        else
+          ant $antDeployArgs $antBuildArgs publish-opt-nodocs
+        fi
     esac
 
     mv $WORKSPACE/scala/buildcharacter.properties $WORKSPACE/versions.properties

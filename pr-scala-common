@@ -26,6 +26,11 @@ IVY_CACHE="$BASEDIR/.ivy2"
 mkdir -p $IVY_CACHE
 rm -rf $IVY_CACHE/cache/org.scala-lang
 
+# temp dir where all 'non-build' operation are performed
+TMP_ROOT_DIR=$(mktemp -d -t pr-scala.XXXX)
+TMP_DIR="${TMP_ROOT_DIR}/tmp"
+mkdir "${TMP_DIR}"
+
 
 # detect sed version and how to enable extended regexes
 SEDARGS="-n$(if (echo "a" | sed -nE "s/a/b/" &> /dev/null); then echo E; else echo r; fi)"
@@ -75,58 +80,6 @@ function parse_properties(){
 }
 
 
-
-# :docstring ant-clean:
-# Usage: ant-clean
-# This cleans a build repo in $SCALADIR, ignoring the mandatory
-# dependency cache update check.
-# :end docstring:
-
-function ant-clean(){
-    ant -Divy.cache.ttl.default=eternal all.clean
-}
-
-# :docstring do_i_have:
-# Usage: do_i_have <groupId> <artifactId> <version>
-# Tests if <groupId>:<artifactId>:jar:<version> is in the local maven repo.
-# :end docstring:
-
-function do_i_have(){
-    say "### local repo test: trying to find $1:$2:jar:$3"
-    CALLBACK=$(pwd)
-    MVN_TEST_DIR=$(mktemp -d -t $1XXX)
-    cd $MVN_TEST_DIR
-    cat > pom.xml <<EOF
- <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-   <modelVersion>4.0.0</modelVersion>
-   <groupId>com.typesafe</groupId>
-   <artifactId>typesafeDummy</artifactId>
-   <packaging>war</packaging>
-   <version>1.0-SNAPSHOT</version>
-   <name>Dummy</name>
-   <url>http://127.0.0.1</url>
-   <dependencies>
-      <dependency>
-         <groupId>$1</groupId>
-         <artifactId>$2</artifactId>
-         <version>$3</version>
-         <scope>test</scope>
-      </dependency>
-   </dependencies>
-</project>
-EOF
-    (mvn $GENMVNOPTS test &> /dev/null)
-    detmvn=${PIPESTATUS[0]}
-    cd $CALLBACK
-    rm -rf $MVN_TEST_DIR
-    if [[ $detmvn -eq 0 ]]; then
-        say "### $1:$2:jar:$3 found !"
-    else
-        say "### $1:$2:jar:$3 not in repo !"
-    fi
-    return $detmvn
-}
-
 # :docstring test:
 # Usage: test <argument ..>
 # Executes <argument ..>, logging the launch of the command to the
@@ -155,35 +108,88 @@ function say(){
     (echo "$@") | tee -a $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log
 }
 
-
-# :docstring maven_fail_detect:
-# Usage : maven_fail_detect [<myString>]
-# This tests if a maven failure ("BUILD FAILURE") was encountered
-# in the main log file. If so, it exits with error code 1. If not,
-# it exits with 0 or continues, depending if (resp.) <myString> is
-# empty or not.
-# This is mostly used as a stateful sanity-check for failure.
-# :end docstring:
-
-function maven_fail_detect() {
-    # failure detection
-    grep -qe "BUILD\ FAILURE" $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log
-    if [ $? -ne 0 ]; then
-        if [ -z $1 ]; then
-            say "### No failure detected in log, exiting with 0"
-            echo "log in $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log"
-            exit 0
-        else
-            say "### No failure detected in log, continuing"
-            return 0
-        fi
-    else
-        say "### Failure  detected in log, exiting with 1"
-        echo "log in $LOGGINGDIR/compilation-$SCALADATE-$SCALAHASH.log"
-        exit 1
-    fi
+# General debug logging
+# $* - message
+function debug () {
+  echo "----- $*"
 }
 
+
+## TAKEN FROM UBER-BUILD, except that it "returns" (via $RES) true/false
+# Check if an artifact is available
+# $1 - groupId
+# $2 - artifacId
+# $3 - version
+# $4 - extra repository to look in (optional)
+# return value in $RES
+function checkAvailability () {
+  cd "${TMP_DIR}"
+  rm -rf *
+
+# pom file for the test project
+  cat > pom.xml << EOF
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.typesafe</groupId>
+  <artifactId>typesafeDummy</artifactId>
+  <packaging>war</packaging>
+  <version>1.0-SNAPSHOT</version>
+  <name>Dummy</name>
+  <url>http://127.0.0.1</url>
+  <dependencies>
+    <dependency>
+      <groupId>$1</groupId>
+      <artifactId>$2</artifactId>
+      <version>$3</version>
+    </dependency>
+  </dependencies>
+  <repositories>
+    <repository>
+      <id>sonatype.snapshot</id>
+      <name>Sonatype maven snapshot repository</name>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      <snapshots>
+        <updatePolicy>daily</updatePolicy>
+      </snapshots>
+    </repository>
+EOF
+
+  if [ -n "$4" ]
+  then
+# adds the extra repository
+    cat >> pom.xml << EOF
+    <repository>
+      <id>extrarepo</id>
+      <name>extra repository</name>
+      <url>$4</url>
+    </repository>
+EOF
+  fi
+
+  cat >> pom.xml << EOF
+  </repositories>
+</project>
+EOF
+
+  set +e
+  mvn "${MAVEN_ARGS[@]}" compile &> "${TMP_DIR}/mvn.log"
+  RES=$?
+  # Quiet the maven, but allow diagnosing problems.
+  grep -i downloading "${TMP_DIR}/mvn.log"
+  grep -i exception "${TMP_DIR}/mvn.log"
+  grep -i error "${TMP_DIR}/mvn.log"
+  set -e
+
+# log the result
+  if [ ${RES} == 0 ]
+  then
+    debug "$1:$2:jar:$3 found !"
+    RES=true
+  else
+    debug "$1:$2:jar:$3 not found !"
+    RES=false
+  fi
+}
 
 # :docstring preparesbt:
 # Usage: preparesbt
