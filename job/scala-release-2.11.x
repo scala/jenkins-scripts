@@ -69,7 +69,8 @@ moduleVersioning=${moduleVersioning-"versions.properties"}
 
 baseDir=${baseDir-`pwd`}
 publishPrivateTask=${publishPrivateTask-"publish"}
-publishSonatypeTask=${publishSonatypeTask-"publish-signed"}
+publishSonatypeTaskCore=${publishSonatypeTaskCore-"publish-signed"}
+publishSonatypeTaskModules=${publishSonatypeTaskModules-"publish-signed"}
 publishLockerPrivateTask=${publishLockerPrivateTask-$publishPrivateTask} # set to "init" to speed up testing of the script (if you already built locker before)
 
 sbtCmd=${sbtCmd-sbt} # TESTING (this is a marker for defaults to change when testing locally: should be sbtx on my mac)
@@ -497,7 +498,7 @@ publishSonatype() {
   # stage to sonatype, along with all modules -Dmaven.version.suffix/-Dbuild.release not necessary,
   # since we're just publishing an existing build
   echo "### Publishing core to sonatype"
-  ant -Dmaven.version.number=$SCALA_VER $publishSonatypeTask
+  ant -Dmaven.version.number=$SCALA_VER $publishSonatypeTaskCore
 
   echo "### Publishing modules to sonatype"
   # build/test/publish scala core modules to sonatype (this will start a new staging repo)
@@ -505,7 +506,7 @@ publishSonatype() {
   # NOTE: only publish those for which versions are set
   # test and publish to sonatype, assuming you have ~/.sbt/0.13/sonatype.sbt and ~/.sbt/0.13/plugin/gpg.sbt
   publishTasks=('set credentials += Credentials(Path.userHome / ".credentials-sonatype")' "set pgpPassphrase := Some(Array.empty)")
-  buildTasks=(test $publishSonatypeTask)
+  buildTasks=(test $publishSonatypeTaskModules)
   buildModules
 
   open=$(st_stagingReposOpen)
