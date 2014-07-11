@@ -21,6 +21,47 @@
 # - ~/.sbt/0.13/plugins/gpg.sbt with:
 #   addSbtPlugin("com.typesafe.sbt" % "sbt-pgp" % "0.8.1")
 
+# Modus operandi:
+#
+# Determine Scala version as:
+#
+# $SCALA_VER_BASE$SCALA_VER_SUFFIX (if former variable is set)
+# By parsing the tag (if HEAD is tagged as v$base$suffix)
+# By parsing build.number for the base version, suffixing with -$sha-nightly
+# Serialize these versions to jenkins.properties, which are passed downstream to scala-release-2.11.x-dist.
+# This also removes the need to tag scala/scala-dist (not possible for nightlies, still encouraged for releases, but not a hard requirement).
+#
+# Determine Module Versions
+#
+# When running in "versions.properties" mode (the default), derive tags from these versions and build, publishing only those modules that are not available yet.
+# Otherwise, build HEAD for all modules, derive a -nightly version for them.
+# Bootstrap:
+#
+# Build minimal core of Scala as this version (aka locker), publish to private-repo
+# Build modules required to bootstrap, publish to private-repo
+# Build Scala using the previously built core and bootstrap modules, publish to private-repo This overwrites the minimal core on private-repo
+# Stage to sonatype (unless building a -nightly release):
+#
+# Stage this Scala build on sonatype
+# Rebuild modules with this Scala build, and stage them on sonatype as well
+# This script can be run in multiple modes. It is design to work without any input,
+# so that it could be run in Travis CI. In that mode, it'll build a release when
+# the current HEAD of $SCALA_REF is tagged, and stage to sonatype. Otherwise,
+# it'll build a nightly.
+#
+# Since the nightlies are intended to be a drop in replacement, all modules are built with the
+# full Scala version as their binary version, so that you can just set scalaVersion to the
+# nightly's sha-derived version and be good to go.
+#
+# The other way to trigger a release is by setting the SCALA_VER_BASE env var.
+#
+# By default, we build the versions of the modules as specified by versions.properties
+# (as specified in the $SCALA_REF commit). Set moduleVersioning to something random
+# to trigger building HEAD of each module, generating a fresh -$(git describe)-nightly version for each.
+#
+# PS: set publishToSonatype to anything but "yes" to avoid publishing to sonatype
+# (publishing only done when $SCALA_REF's HEAD is tagged / SCALA_VER_BASE is set.)
+
 SCALA_REF=${SCALA_REF-"2.11.x"}
 
 # set to something besides the default to build nightly snapshots of the modules instead of some tagged version
