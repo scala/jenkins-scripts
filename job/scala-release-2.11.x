@@ -319,6 +319,8 @@ determineScalaVersion() {
       parseScalaProperties "build.number"
       SCALA_VER_BASE="$version_major.$version_minor.$version_patch"
       SCALA_VER_SUFFIX="-$(git rev-parse --short HEAD)-nightly"
+      SCALA_DOC_VER=$(git rev-parse HEAD)
+
       # TODO: publish nightly snapshot using this script
       publishToSonatype="no"
       echo "dist_ref=2.11.x" >> $baseDir/jenkins.properties # for the -dist downstream jobs that build the actual archives
@@ -328,6 +330,7 @@ determineScalaVersion() {
       local RE='v*\([0-9]*\)[.]\([0-9]*\)[.]\([0-9]*\)\([0-9A-Za-z-]*\)' # don't change this to make it more accurate, it's not worth it
       SCALA_VER_BASE="$(echo $scalaTag | sed -e "s#$RE#\1.\2.\3#")"
       SCALA_VER_SUFFIX="$(echo $scalaTag | sed -e "s#$RE#\4#")"
+      SCALA_DOC_VER=$scalaTag
 
       if [ "$SCALA_VER_BASE" == "$scalaTag" ]; then
         echo "Could not parse version $scalaTag"
@@ -495,6 +498,7 @@ bootstrap() {
       -Dmaven.version.suffix=$SCALA_VER_SUFFIX\
       ${updatedModuleVersions[@]} \
       -Dupdate.versions=1\
+      -Dscaladoc.git.commit=$SCALA_DOC_VER\
       -Dremote.snapshot.repository=NOPE\
       -Dremote.release.repository=$privateRepo\
       -Drepository.credentials.id=$privateCred\
