@@ -30,10 +30,12 @@ EOM
     }
 
     # publish scaladoc nightlies
-    rsync -az build/scaladoc/ "$nightly_rsync_dest/$scaladocDir"
+    [[ -d build/scaladoc/ ]] && {
+      rsync -az build/scaladoc/ "$nightly_rsync_dest/$scaladocDir"
+    }
 
     # push to the maven repository. in 2.11.x and above, we've already published during the main job
-    [[ -e dists/maven/latest/build.xml ]]; then
+    [[ -e dists/maven/latest/build.xml ]] && {
       cd dists/maven/latest
       ant deploy -Dsettings.file=$maven_settings_file
     fi
