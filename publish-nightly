@@ -38,6 +38,6 @@ EOM
     [[ -e dists/maven/latest/build.xml ]] && {
       cd dists/maven/latest
       ant deploy -Dsettings.file=$maven_settings_file
-    fi
+    }
   }
 }
