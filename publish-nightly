@@ -17,7 +17,7 @@ EOM
   buildNr=$3
   scaladocDir=$4
 
-  [[ $publish == "true" ]] && {
+  if [[ $publish == "true" ]]; then
     rm -rf jenkins-artifacts jenkins-artifacts.tgz
     wgetFile job/$jobName/$buildNr/artifact/jenkins-artifacts.tgz
     tar xzf jenkins-artifacts.tgz
@@ -25,19 +25,19 @@ EOM
     cd jenkins-artifacts
 
     # Archive Scala nightly distribution (no-op by now, we no longer publish nightly tgz/zip/...)
-    [[ -d dists/archives ]] && {
+    if [[ -d dists/archives ]]; then
       rsync -az dists/archives/ "$nightly_rsync_dest/distributions"
-    }
+    fi
 
     # publish scaladoc nightlies
-    [[ -d build/scaladoc/ ]] && {
+    if [[ -d build/scaladoc ]]; then
       rsync -az build/scaladoc/ "$nightly_rsync_dest/$scaladocDir"
-    }
+    fi
 
     # push to the maven repository. in 2.11.x and above, we've already published during the main job
-    [[ -e dists/maven/latest/build.xml ]] && {
+    if [[ -e dists/maven/latest/build.xml ]]; then
       cd dists/maven/latest
       ant deploy -Dsettings.file=$maven_settings_file
-    }
-  }
+    fi
+  fi
 }

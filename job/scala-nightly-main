@@ -13,10 +13,10 @@ savedState=$?
 # publishing.
 # this has changed 2.11.x, maven publishing is part of the main build.xml. so we do it here,
 # easier than fixing up the archive-nightly script.
-[[ $publish == "true" ]] && grep -q '<target name="publish"' build.xml && {
+if [[ $publish == "true" ]] && grep -q '<target name="publish"' build.xml; then
   ant publish
   savedStatePublish=$?
-}
+fi
 
 $scriptsDir/archive-nightly
 exit $(($savedState || $savedStatePublish))
