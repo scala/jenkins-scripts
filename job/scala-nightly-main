@@ -8,10 +8,15 @@ scriptsDir="$( cd "$( dirname "$0" )/.." && pwd )"
 $scriptsDir/build
 savedState=$?
 
-if grep -q '<target name="publish"' build.xml; then
+# on 2.10.x, publishing to maven is not done here. instead, the archive-nightly task (below)
+# saves the files in dists/maven/latest, and the downstream job (archive-nightly) will do the
+# publishing.
+# this has changed 2.11.x, maven publishing is part of the main build.xml. so we do it here,
+# easier than fixing up the archive-nightly script.
+[[ $publish == "true" ]] && grep -q '<target name="publish"' build.xml && {
   ant publish
   savedStatePublish=$?
-fi
+}
 
 $scriptsDir/archive-nightly
 exit $(($savedState || $savedStatePublish))

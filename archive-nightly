@@ -11,28 +11,36 @@ mkdir jenkins-artifacts
 # publish-nightly publishes scaladoc, distribution archives
 [[ -d build/scaladoc ]] && {
   mkdir -p jenkins-artifacts/build
-  rsync -rlv build/scaladoc jenkins-artifacts/build/
+  rsync -rl build/scaladoc jenkins-artifacts/build/
 }
-[[ -d dists/archives ]] && {
-  mkdir -p jenkins-artifacts/dists
-  rsync -rlv dists/archives jenkins-artifacts/dists/
-}
-#[[ -d dists/sbaz ]] && {
+
+# since 2.11.x, we don't publish nightly archives anymore (tgz/zip etc). commenting
+# this out also stops publishing archiving them for 2.10.x
+#[[ -d dists/archives ]] && {
 #  mkdir -p jenkins-artifacts/dists
-#  rsync -rlv dists/sbaz jenkins-artifacts/dists/
+#  rsync -rl dists/archives jenkins-artifacts/dists/
 #}
 
-# publish-nightly publishes maven artifacts
-[[ -d dists/maven ]] && {
+# sbaz is long gone.
+#[[ -d dists/sbaz ]] && {
+#  mkdir -p jenkins-artifacts/dists
+#  rsync -rl dists/sbaz jenkins-artifacts/dists/
+#}
+
+# publish-nightly publishes maven artifacts. this is still in use for 2.10.x.
+# for 2.11.x and later, maven nightlies are published directly in scala-nightly-main.
+# the dists/maven/latest/build.xml file does not exist for 2.11.x and later, so we test on that.
+[[ -e dists/maven/latest/build.xml ]] && {
   mkdir -p jenkins-artifacts/dists
-  rsync -rlv dists/maven jenkins-artifacts/dists/
+  rsync -rl dists/maven jenkins-artifacts/dists/
 }
 
 # scala-nightly-signatures checks signatures of scala-library.jar
-[[ -e dists/latest/lib/scala-library.jar ]] && {
-  mkdir -p jenkins-artifacts/dists/latest/lib
-  cp dists/latest/lib/scala-library.jar jenkins-artifacts/dists/latest/lib/scala-library.jar
-}
+# disabled - scala-nighlty-signatures is disabled for months.
+#[[ -e dists/latest/lib/scala-library.jar ]] && {
+#  mkdir -p jenkins-artifacts/dists/latest/lib
+#  cp dists/latest/lib/scala-library.jar jenkins-artifacts/dists/latest/lib/scala-library.jar
+#}
 
 tar czf jenkins-artifacts.tgz jenkins-artifacts
 rm -rf jenkins-artifacts

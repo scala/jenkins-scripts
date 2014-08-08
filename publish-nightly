@@ -24,20 +24,16 @@ EOM
 
     cd jenkins-artifacts
 
-    [[ -d dists/archives ]] || {
-      echo "Can't find build, has it completed? No directory at dists/archives"
-      exit 1
+    # Archive Scala nightly distribution (no-op by now, we no longer publish nightly tgz/zip/...)
+    [[ -d dists/archives ]] && {
+      rsync -az dists/archives/ "$nightly_rsync_dest/distributions"
     }
-
-    # Archive Scala nightly distribution
-    rsync -az dists/archives/ "$nightly_rsync_dest/distributions"
 
     # publish scaladoc nightlies
     rsync -az build/scaladoc/ "$nightly_rsync_dest/$scaladocDir"
 
-    # push to the maven repository
-    # in master, we've already published during the main job
-    if [[ "$jobName" != *-master ]]; then
+    # push to the maven repository. in 2.11.x and above, we've already published during the main job
+    [[ -e dists/maven/latest/build.xml ]]; then
       cd dists/maven/latest
       ant deploy -Dsettings.file=$maven_settings_file
     fi
