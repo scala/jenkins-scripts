@@ -75,6 +75,10 @@ publishLockerPrivateTask=${publishLockerPrivateTask-$publishPrivateTask} # set t
 
 sbtCmd=${sbtCmd-sbt} # TESTING (this is a marker for defaults to change when testing locally: should be sbtx on my mac)
 
+# 0.13.5 does not respect "set every scalaVersion", see
+# https://github.com/scala/scala-parser-combinators/pull/27
+sbtCmd="$sbtCmd -sbt-version 0.13.2"
+
 forceRebuild=${forceRebuild-no}
 
 # publishToSonatype
