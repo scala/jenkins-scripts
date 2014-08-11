@@ -562,6 +562,8 @@ if [ "$publishToSonatype" == "yes" ]
   else # build modules one more time, just to mimic the regular build as much when running as nightly
     echo "### Rebuilding modules with quick, publishing to $baseDir/ivy/local"
     buildTasks=(test publish-local)
+    # buildScalacheck always uses publishPrivateTask (not buildTasks). we override it to avoid publishing to private-repo.
+    publishPrivateTask="publish-local"
     forceRebuild="yes"
     buildModules
 fi
