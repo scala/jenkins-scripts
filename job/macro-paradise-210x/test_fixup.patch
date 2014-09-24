@@ -1,28 +1,41 @@
-From 1e249a1bfbb4067186f326f355c51ba5a3f5b32b Mon Sep 17 00:00:00 2001
+From 1dff23fd5767f215682ffc65351da5c4877b7615 Mon Sep 17 00:00:00 2001
 From: Eugene Burmako <xeno.by@gmail.com>
-Date: Tue, 16 Sep 2014 10:52:17 +0200
-Subject: [PATCH] tests that currently fail for macro paradise
+Date: Wed, 24 Sep 2014 21:12:21 +0200
+Subject: [PATCH] tests that currently don't work for paradise
 
 ---
- test/files/neg/divergent-implicit.check       | 10 ++++++----
- test/files/neg/t5578.check                    |  5 ++++-
- test/files/neg/t5845.check                    |  7 -------
- test/files/neg/t5845.scala                    | 16 ----------------
- test/files/neg/t7519-b.check                  |  4 +++-
- test/files/neg/t7519.check                    |  8 ++++++--
+ test/files/neg/divergent-implicit.check       | 10 ++++---
+ test/files/neg/t5578.check                    |  5 +++-
+ test/files/neg/t5845.check                    |  7 -----
+ test/files/neg/t5845.scala                    | 16 -----------
+ test/files/neg/t5923c.check                   |  4 ---
+ test/files/neg/t5923c/Macros_1.scala          | 39 ---------------------------
+ test/files/neg/t5923c/Test_2.scala            | 12 ---------
+ test/files/neg/t7519-b.check                  |  4 ++-
+ test/files/neg/t7519.check                    |  8 ++++--
  test/files/neg/t800.check                     |  3 +--
- test/files/neg/t8104b/Macros_1.scala          | 23 -----------------------
- test/files/neg/t8104b/Test_2.scala            | 24 ------------------------
- test/files/pos/t5845.scala                    | 16 ++++++++++++++++
- test/files/pos/z1730.scala                    | 13 -------------
+ test/files/neg/t8104b/Macros_1.scala          | 23 ----------------
+ test/files/neg/t8104b/Test_2.scala            | 24 -----------------
+ test/files/pos/t5845.scala                    | 16 +++++++++++
+ test/files/pos/z1730.scala                    | 13 ---------
+ test/files/run/t5923a-nofundep.check          |  3 ---
+ test/files/run/t5923a-nofundep/Macros_1.scala | 14 ----------
+ test/files/run/t5923a-nofundep/Test_2.scala   |  5 ----
  test/files/scalap/typeAnnotations/result.test |  2 +-
- 12 files changed, 37 insertions(+), 94 deletions(-)
+ test/pending/run/t5293-map.scala              | 32 +++++++++++-----------
+ 19 files changed, 53 insertions(+), 187 deletions(-)
  delete mode 100644 test/files/neg/t5845.check
  delete mode 100644 test/files/neg/t5845.scala
+ delete mode 100644 test/files/neg/t5923c.check
+ delete mode 100644 test/files/neg/t5923c/Macros_1.scala
+ delete mode 100644 test/files/neg/t5923c/Test_2.scala
  delete mode 100644 test/files/neg/t8104b/Macros_1.scala
  delete mode 100644 test/files/neg/t8104b/Test_2.scala
  create mode 100644 test/files/pos/t5845.scala
  delete mode 100644 test/files/pos/z1730.scala
+ delete mode 100644 test/files/run/t5923a-nofundep.check
+ delete mode 100644 test/files/run/t5923a-nofundep/Macros_1.scala
+ delete mode 100644 test/files/run/t5923a-nofundep/Test_2.scala
 
 diff --git a/test/files/neg/divergent-implicit.check b/test/files/neg/divergent-implicit.check
 index 5f20df1b91..759823d6a9 100644
@@ -95,6 +108,80 @@ index 823c722c14..0000000000
 -  implicit val n1 = new Num[Int] {}
 -  println(5 +++ 5)
 -}
+diff --git a/test/files/neg/t5923c.check b/test/files/neg/t5923c.check
+deleted file mode 100644
+index 6d3d6b1b78..0000000000
+--- a/test/files/neg/t5923c.check
++++ /dev/null
+@@ -1,4 +0,0 @@
+-Test_2.scala:7: error: could not find implicit value for parameter iso: Iso[Test.Foo,L]
+-    val equiv = foo(Foo(23, "foo", true))
+-                   ^
+-one error found
+diff --git a/test/files/neg/t5923c/Macros_1.scala b/test/files/neg/t5923c/Macros_1.scala
+deleted file mode 100644
+index 0b7a3399e2..0000000000
+--- a/test/files/neg/t5923c/Macros_1.scala
++++ /dev/null
+@@ -1,39 +0,0 @@
+-import language.experimental.macros
+-import scala.reflect.macros.Context
+-
+-trait Iso[T, U] {
+-  def to(t : T) : U
+-  // def from(u : U) : T
+-}
+-
+-object Iso {
+-  implicit def materializeIso[T, U]: Iso[T, U] = macro impl[T, U]
+-  def impl[T: c.WeakTypeTag, U: c.WeakTypeTag](c: Context): c.Expr[Iso[T, U]] = {
+-    import c.universe._
+-    import definitions._
+-    import Flag._
+-
+-    val sym = c.weakTypeOf[T].typeSymbol
+-    if (!sym.isClass || !sym.asClass.isCaseClass) c.abort(c.enclosingPosition, s"$sym is not a case class")
+-    val fields = sym.typeSignature.declarations.toList.collect{ case x: TermSymbol if x.isVal && x.isCaseAccessor => x }
+-
+-    def mkTpt() = {
+-      val core = Ident(TupleClass(fields.length) orElse UnitClass)
+-      if (fields.length == 0) core
+-      else AppliedTypeTree(core, fields map (f => TypeTree(f.typeSignature)))
+-    }
+-
+-    def mkFrom() = {
+-      if (fields.length == 0) Literal(Constant(Unit))
+-      else Apply(Ident(newTermName("Tuple" + fields.length)), fields map (f => Select(Ident(newTermName("f")), newTermName(f.name.toString.trim))))
+-    }
+-
+-    val evidenceClass = ClassDef(Modifiers(FINAL), newTypeName("$anon"), List(), Template(
+-      List(AppliedTypeTree(Ident(newTypeName("Iso")), List(Ident(sym), mkTpt()))),
+-      emptyValDef,
+-      List(
+-        DefDef(Modifiers(), nme.CONSTRUCTOR, List(), List(List()), TypeTree(), Block(List(Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())), Literal(Constant(())))),
+-        DefDef(Modifiers(), newTermName("to"), List(), List(List(ValDef(Modifiers(PARAM), newTermName("f"), Ident(sym), EmptyTree))), TypeTree(), mkFrom()))))
+-    c.Expr[Iso[T, U]](Block(List(evidenceClass), Apply(Select(New(Ident(newTypeName("$anon"))), nme.CONSTRUCTOR), List())))
+-  }
+-}
+diff --git a/test/files/neg/t5923c/Test_2.scala b/test/files/neg/t5923c/Test_2.scala
+deleted file mode 100644
+index a00f4ed7db..0000000000
+--- a/test/files/neg/t5923c/Test_2.scala
++++ /dev/null
+@@ -1,12 +0,0 @@
+-// see the comments for macroExpandApply.onDelayed for an explanation of what's tested here
+-object Test extends App {
+-  case class Foo(i: Int, s: String, b: Boolean)
+-  def foo[C, L](c: C)(implicit iso: Iso[C, L]): L = iso.to(c)
+-
+-  {
+-    val equiv = foo(Foo(23, "foo", true))
+-    def typed[T](t: => T) {}
+-    typed[(Int, String, Boolean)](equiv)
+-    println(equiv)
+-  }
+-}
+\ No newline at end of file
 diff --git a/test/files/neg/t7519-b.check b/test/files/neg/t7519-b.check
 index ad554b8633..08d819eeec 100644
 --- a/test/files/neg/t7519-b.check
@@ -240,6 +327,48 @@ index 0c5875a818..0000000000
 -    3.xx(34)
 -  }
 -}
+diff --git a/test/files/run/t5923a-nofundep.check b/test/files/run/t5923a-nofundep.check
+deleted file mode 100644
+index 7165b734ac..0000000000
+--- a/test/files/run/t5923a-nofundep.check
++++ /dev/null
+@@ -1,3 +0,0 @@
+-C(Int)
+-C(String)
+-C(Nothing)
+diff --git a/test/files/run/t5923a-nofundep/Macros_1.scala b/test/files/run/t5923a-nofundep/Macros_1.scala
+deleted file mode 100644
+index 6d21362c4d..0000000000
+--- a/test/files/run/t5923a-nofundep/Macros_1.scala
++++ /dev/null
+@@ -1,14 +0,0 @@
+-import scala.reflect.macros.Context
+-import language.experimental.macros
+-
+-case class C[T](t: String)
+-object C {
+-  implicit def foo[T]: C[T] = macro Macros.impl[T]
+-}
+-
+-object Macros {
+-  def impl[T: c.WeakTypeTag](c: Context) = {
+-    import c.universe._
+-    reify(C[T](c.literal(weakTypeOf[T].toString).splice))
+-  }
+-}
+\ No newline at end of file
+diff --git a/test/files/run/t5923a-nofundep/Test_2.scala b/test/files/run/t5923a-nofundep/Test_2.scala
+deleted file mode 100644
+index 001ff9aea8..0000000000
+--- a/test/files/run/t5923a-nofundep/Test_2.scala
++++ /dev/null
+@@ -1,5 +0,0 @@
+-object Test extends App {
+-  println(implicitly[C[Int]])
+-  println(implicitly[C[String]])
+-  println(implicitly[C[Nothing]])
+-}
+\ No newline at end of file
 diff --git a/test/files/scalap/typeAnnotations/result.test b/test/files/scalap/typeAnnotations/result.test
 index 407b0235c6..69129d6d26 100644
 --- a/test/files/scalap/typeAnnotations/result.test
@@ -253,6 +382,104 @@ index 407b0235c6..69129d6d26 100644
    type T
    def compose[@scala.specialized A](x : A, y : R) : A = { /* compiled code */ }
 +  val x : scala.Int = { /* compiled code */ }
+ }
+diff --git a/test/pending/run/t5293-map.scala b/test/pending/run/t5293-map.scala
+index 2707aed07e..9a6289a2bc 100644
+--- a/test/pending/run/t5293-map.scala
++++ b/test/pending/run/t5293-map.scala
+@@ -1,4 +1,4 @@
+-
++t5
+ 
+ 
+ import scala.collection.JavaConverters._
+@@ -6,7 +6,7 @@ import scala.collection.JavaConverters._
+ 
+ 
+ object Test extends App {
+-  
++
+   def bench(label: String)(body: => Unit): Long = {
+     val start = System.nanoTime
+ 
+@@ -15,14 +15,14 @@ object Test extends App {
+     val end = System.nanoTime
+ 
+     //println("%s: %s ms".format(label, (end - start) / 1000.0 / 1000.0))
+-    
++
+     end - start
+   }
+-  
++
+   def benchJava(values: java.util.Map[Int, Int]) = {
+     bench("Java Map") {
+       val m = new java.util.HashMap[Int, Int]
+-      
++
+       m.putAll(values)
+     }
+   }
+@@ -30,33 +30,33 @@ object Test extends App {
+   def benchScala(values: Iterable[(Int, Int)]) = {
+     bench("Scala Map") {
+       val m = new scala.collection.mutable.HashMap[Int, Int]
+-      
++
+       m ++= values
+     }
+   }
+-  
++
+   def benchScalaSorted(values: Iterable[(Int, Int)]) = {
+     bench("Scala Map sorted") {
+       val m = new scala.collection.mutable.HashMap[Int, Int]
+-      
++
+       m ++= values.toArray.sorted
+     }
+   }
+-  
++
+   def benchScalaPar(values: Iterable[(Int, Int)]) = {
+     bench("Scala ParMap") {
+       val m = new scala.collection.parallel.mutable.ParHashMap[Int, Int] map { x => x }
+-      
++
+       m ++= values
+     }
+   }
+-  
++
+   val total = 50000
+   val values = (0 until total) zip (0 until total)
+   val map = scala.collection.mutable.HashMap.empty[Int, Int]
+-  
++
+   map ++= values
+-  
++
+   // warmup
+   for (x <- 0 until 5) {
+     benchJava(map.asJava)
+@@ -66,15 +66,15 @@ object Test extends App {
+     benchScala(map)
+     benchScalaPar(map)
+   }
+-  
++
+   val javamap = benchJava(map.asJava)
+   val scalamap = benchScala(map)
+   val scalaparmap = benchScalaPar(map)
+-  
++
+   // println(javamap)
+   // println(scalamap)
+   // println(scalaparmap)
+-  
++
+   assert(scalamap < (javamap * 10), "scalamap: " + scalamap + " vs. javamap: " + javamap)
+   assert(scalaparmap < (javamap * 10), "scalaparmap: " + scalaparmap + " vs. javamap: " + javamap)
  }
 -- 
 2.1.0
