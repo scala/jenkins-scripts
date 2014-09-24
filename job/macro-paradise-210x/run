@@ -5,7 +5,7 @@ script_dir="$( cd "$( dirname "$0" )" && pwd )"
 scriptsDir="$( cd "$( dirname "$0" )/../.." && pwd )"
 . $scriptsDir/common
 runSbt () {
-  sbt -Dmaven.settings.file="$maven_settings_file" -no-colors -no-share -sbt-launch-dir "$script_dir/project/launcher" "$@"
+  sbt -Dmaven.settings.file="$maven_settings_file" -no-colors -sbt-launch-dir "$script_dir/project/launcher" "$@"
 }
 git clean -dfx
 if [[ -d paradise ]]; then rm -rf paradise; fi
