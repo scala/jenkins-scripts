@@ -25,7 +25,7 @@ cd $BASEDIR
 
 # this depends on the fact that the default clone checkout is the
 # dev branch (master or the local equivalent)
-getOrUpdate $LAWSDIR $LAWSURL master # TODO: go back to "v${laws_version_number}"
+getOrUpdate $LAWSDIR $LAWSURL all-sbt # TODO: go back to "v${laws_version_number}"
 
 #####################################################
 # Set versions
