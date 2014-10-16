@@ -14,7 +14,7 @@ parse_properties versions.properties
 
 main
 
-LAWSDIR="$BASEDIR/scala-collection-laws/"
+LAWSDIR="$BASEDIR/scala-collections-laws/"
 LAWSURL="https://github.com/Ichoran/scala-collections-laws.git"
 
 cd $BASEDIR
@@ -43,7 +43,7 @@ fi
 preparesbt
 
 #####################################################
-# Build and test scala-collection-laws
+# Build and test scala-collections-laws
 #####################################################
 
 curl -o $BASEDIR/sbt-launch.jar -s http://repo.typesafe.com/typesafe/ivy-releases/org.scala-sbt/sbt-launch/0.13.6/sbt-launch.jar
