@@ -51,7 +51,7 @@ curl -o $BASEDIR/sbt-launch.jar -s http://repo.typesafe.com/typesafe/ivy-release
 SBT_JAVA_OPTS="-XX:MaxPermSize=384m -Xmx6096M -XX:+CMSClassUnloadingEnabled -XX:ReservedCodeCacheSize=256m -Dsbt.global.base=$SBT_HOME -Dsbt.ivy.home=$IVY_CACHE -Dsbt.log.noformat=true -jar $BASEDIR/sbt-launch.jar"
 
 (set -x; cd $LAWSDIR &&
- java $SBT_JAVA_OPTS "reboot full" clean "set every scalaVersion := \"$maven_version_number\"" "show scala-instance" "show scalaVersion" "show scalaBinaryVersion" "tests/runMain tests.generated.collection.Test_All")
+ java $SBT_JAVA_OPTS "reboot full" clean "set every scalaVersion := \"$maven_version_number\"" "show scala-instance" "show scalaVersion" "show scalaBinaryVersion" projects "tests/runMain tests.generated.collection.Test_All")
 
 # Remove .sbt/repositories scaffolding
 #cleanupsbt
