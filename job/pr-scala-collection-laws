@@ -1,0 +1,57 @@
+#!/bin/bash -e
+# PRE:
+#  - artifacts: versions.properties (parsed for maven_version_number, version_minor)
+#  - on pr maven repo: Scala version $maven_version_number
+
+scriptsDir="$( cd "$( dirname "$0" )/.." && pwd )"
+. $scriptsDir/common
+. $scriptsDir/pr-scala-common
+parse_properties versions.properties
+
+#####################
+# BEGIN MAIN SCRIPT #
+#####################
+
+main
+
+LAWSDIR="$BASEDIR/scala-collection-laws/"
+LAWSURL="https://github.com/Ichoran/scala-collection-laws.git"
+
+cd $BASEDIR
+
+#####################################################
+# Clone repos
+#####################################################
+
+# this depends on the fact that the default clone checkout is the
+# dev branch (master or the local equivalent)
+getOrUpdate $LAWSDIR $LAWSURL master # TODO: go back to "v${laws_version_number}"
+
+#####################################################
+# Set versions
+#####################################################
+
+if [ "$version_minor" != "10" ]
+    then echo "Integrating with Scala 2.11+"
+    else echo "Not integrating with older Scala."; exit 0
+fi
+
+#####################################################
+# Prepare SBT
+#####################################################
+
+preparesbt
+
+#####################################################
+# Build and test scala-collection-laws
+#####################################################
+
+curl -o $BASEDIR/sbt-launch.jar -s http://repo.typesafe.com/typesafe/ivy-releases/org.scala-sbt/sbt-launch/0.13.6/sbt-launch.jar
+
+SBT_JAVA_OPTS="-XX:MaxPermSize=384m -Xmx6096M -XX:+CMSClassUnloadingEnabled -XX:ReservedCodeCacheSize=256m -Dsbt.global.base=$SBT_HOME -Dsbt.ivy.home=$IVY_CACHE -Dsbt.log.noformat=true -jar $BASEDIR/sbt-launch.jar"
+
+(set -x; cd $LAWSDIR &&
+ java $SBT_JAVA_OPTS "reboot full" clean "set every scalaVersion := \"$maven_version_number\"" "show scala-instance" "show scalaVersion" "show scalaBinaryVersion" "tests/runMain tests.generated.collection.Test_All")
+
+# Remove .sbt/repositories scaffolding
+#cleanupsbt
