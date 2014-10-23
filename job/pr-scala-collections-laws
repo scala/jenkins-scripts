@@ -15,7 +15,7 @@ parse_properties versions.properties
 main
 
 LAWSDIR="$BASEDIR/scala-collections-laws/"
-LAWSURL="https://github.com/Ichoran/scala-collections-laws.git"
+LAWSURL="https://github.com/scala/scala-collections-laws.git"
 
 cd $BASEDIR
 
@@ -25,7 +25,7 @@ cd $BASEDIR
 
 # this depends on the fact that the default clone checkout is the
 # dev branch (master or the local equivalent)
-getOrUpdate $LAWSDIR $LAWSURL all-sbt # TODO: go back to "v${laws_version_number}"
+getOrUpdate $LAWSDIR $LAWSURL master
 
 #####################################################
 # Set versions
