@@ -5,13 +5,14 @@ script_dir="$( cd "$( dirname "$0" )" && pwd )"
 scriptsDir="$( cd "$( dirname "$0" )/../.." && pwd )"
 . $scriptsDir/common
 runSbt () {
-  sbt -Dmaven.settings.file="$maven_settings_file" -Dscala.version="2.10.4" -no-colors -no-share "$@"
+  sbt -Dmaven.settings.file="$maven_settings_file" -Dscala.version="2.10.4" -no-colors "$@"
 }
 git clean -dfx
 if [[ -d pickling ]]; then rm -rf pickling; fi
 git clone git@github.com:scala/pickling.git pickling
 cd pickling
 git checkout 0.9.x
+git rev-parse HEAD
 
 jar="quasiquotes_2.10-2.0.0.jar"
 url="http://search.maven.org/remotecontent?filepath=org/scalamacros/quasiquotes_2.10/2.0.0/quasiquotes_2.10-2.0.0.jar"
