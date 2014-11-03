@@ -14,8 +14,8 @@ cd pickling
 git checkout 0.9.x
 git rev-parse HEAD
 
-jar="quasiquotes_2.10-2.0.0.jar"
-url="http://search.maven.org/remotecontent?filepath=org/scalamacros/quasiquotes_2.10/2.0.1/quasiquotes_2.10-2.0.1.jar"
+jar="quasiquotes_2.10-2.0.1.jar"
+url="http://search.maven.org/remotecontent?filepath=org/scalamacros/quasiquotes_2.10/2.0.1/$jar"
 
 http_code=$(curl --fail --silent --output "$jar" "$url")
 if (( $? != 0 )); then
