@@ -1,0 +1,28 @@
+# THIS IS A TEMPORARY COPY OF pr-scala-test script that does NOT assume that
+# particular version of Scala has been published to Maven repo; previously
+# that assumption allowed us to use published version of Scala as STARR
+# This script has been created on 11/11/2014 and should go away as soon as
+# we figure out how to publish to Maven repos again
+# see also: https://groups.google.com/d/topic/scala-internals/5hHIkPiMTkk/discussion
+#
+#!/bin/bash -ex
+# PRE:
+#  - artifacts: versions.properties (parsed for maven_version_number)
+#  - on pr maven repo: Scala version $maven_version_number
+# OPTIONAL ENV VARS: 
+#  - $testExtraArgs for any extra arguments to pass to ant
+#  - $testTarget (default is test-opt)
+
+scriptsDir="$( cd "$( dirname "$0" )/.." && pwd )"
+. $scriptsDir/common
+. $scriptsDir/pr-scala-common
+
+parse_properties versions.properties
+
+cd $WORKSPACE/scala
+
+./pull-binary-libs.sh || ./pull-binary-libs
+
+# 
+antArgs="-Dscalac.args.optimise=-optimise -Dextra.repo.url=$prRepoUrl -Dlocker.skip=1"
+ant $antArgs $testExtraArgs ${testTarget-test.core docs.done}
