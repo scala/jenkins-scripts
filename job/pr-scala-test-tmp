@@ -18,7 +18,7 @@ scriptsDir="$( cd "$( dirname "$0" )/.." && pwd )"
 . $scriptsDir/pr-scala-common
 
 cd $WORKSPACE/scala
-parse_properties versions.properties
+export BASEDIR=$(pwd) && parse_properties versions.properties
 
 ./pull-binary-libs.sh || ./pull-binary-libs
 
