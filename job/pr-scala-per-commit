@@ -3,7 +3,7 @@
 echo "Dry run? $prDryRun"
 
 case $JOB_NAME in
-  pr-scala-publish-core|pr-scala-rangepos)
+  pr-scala-publish-core|pr-scala-rangepos|pr-scala-test-tmp)
     echo "Deleting stale mergetarget -- will be created by this job."
     rm -f $WORKSPACE/mergetarget
     mergetarget="FETCH_HEAD" ;;
