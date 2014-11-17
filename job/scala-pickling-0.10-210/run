@@ -17,7 +17,7 @@ git rev-parse HEAD
 jar="quasiquotes_2.10-2.0.1.jar"
 url="http://search.maven.org/remotecontent?filepath=org/scalamacros/quasiquotes_2.10/2.0.1/$jar"
 
-http_code=$(curl --fail --silent --output "$jar" "$url")
+http_code=$(curl -L --fail --silent --output "$jar" "$url")
 if (( $? != 0 )); then
   echo "Error downloading $jar: response code: $http_code"
   echo "$url"
