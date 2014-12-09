@@ -6,7 +6,22 @@ runSbt () {
   sbt -no-colors -no-share -sbt-launch-dir $script_dir/project/launcher "$@"
 }
 
+grepVer() {
+  echo `cat build.number | sed -e "s/version.$1=\([0-9]*\)/\1/" -e 'tx' -e 'd' -e ':x'`
+}
+
 git clean -dfx
+
+curl https://raw.githubusercontent.com/scala/scala/2.11.x/build.number > build.number
+MAJ=$(grepVer "major")
+MIN=$(grepVer "minor")
+PAT=$(grepVer "patch")
+
+VER="$MAJ.$MIN.$PAT-SNAPSHOT"
+echo "using scala version $VER"
+
+sed -i.bak "s/__SCALA-VERSION__/$VER/g" build.sbt
+
 runSbt compile
 runSbt run 2>&1 | tee out.txt
 grep `cat out.check` out.txt
