@@ -29,6 +29,7 @@ then
   # if no mergetarget file present, save it for downstream jobs
   [[ -f $WORKSPACE/mergetarget ]] || (git rev-parse FETCH_HEAD > $WORKSPACE/mergetarget)
   git checkout --detach -f $mergetarget
+  checkWhitespace $sha
   git clean -fxd
   git merge $sha
   echo "Building commit $sha of #${pullrequest} (merged into ${mergebranch})."
@@ -44,6 +45,7 @@ else # build intermediate commits as-is
   # do build once or not at all (commit == sha)
   for commit in `git rev-list -n 1 $sha --not $HEADS`
   do 
+    checkWhitespace $commit
     git checkout --detach -f $commit
     git log -n 1 --oneline HEAD
     echo "Building commit $commit of #$pullrequest (targeting $mergetarget)."

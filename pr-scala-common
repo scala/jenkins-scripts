@@ -258,3 +258,10 @@ function main() {
         exit 1
     fi
 }
+
+# non-zero exit when git show --oneline --check $1 introduces whitespace errors
+function checkWhitespace() {
+ git config core.whitespace tab-in-indent,trailing-space,space-before-tab,cr-at-eol
+ echo "Checking that $1 does not introduce whitespace errors."
+ git show --oneline --check $1
+}
