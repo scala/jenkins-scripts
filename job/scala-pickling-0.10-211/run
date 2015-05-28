@@ -14,7 +14,7 @@ cd pickling
 git checkout 0.10.x
 
 # STEP 2: RUN THE TESTS
-runSbt "project scala-pickling" test
+runSbt "project core" test
 
 # STEP 3: PUBLISH TO SONATYPE
-runSbt "project scala-pickling" publish
+runSbt "project core" publish
